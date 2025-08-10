@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -12,11 +13,12 @@ const Navbar = () => {
 
   return (
     <nav className="bg-blue-600 text-white p-4 flex justify-between items-center">
-      <Link to="/" className="text-2xl font-bold">Your apps name</Link>
+      <Link to="/" className="text-2xl font-bold">Online Plant Nursery System</Link>
       <div>
         {user ? (
           <>
-            <Link to="/tasks" className="mr-4">CRUD</Link>
+            <Link to="/plants" className="mr-4">Plants</Link>
+            <Link to="/orders" className="mr-4">Orders</Link>
             <Link to="/profile" className="mr-4">Profile</Link>
             <button
               onClick={handleLogout}
