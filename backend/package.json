@@ -24,7 +24,7 @@
     "esm": "^3.2.25",
     "mocha": "^11.0.1",
     "nodemon": "^2.0.15",
-    "sinon": "^19.0.2"
+    "sinon": "^19.0.5"
   },
   "author": "Task Manager Team",
   "license": "ISC"
