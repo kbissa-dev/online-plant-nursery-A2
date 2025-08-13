@@ -6,8 +6,9 @@ Frontend: http://52.63.158.152
 
 Backend health (optional): http://52.63.158.152:5001/api/health
 
-Demo login (assessment use only):
-email: <demo_email@yourdomain> • password: <TempPass123!>
+Demo login:-
+email:  
+password: 
 
 
 JIRA Board (public link)
