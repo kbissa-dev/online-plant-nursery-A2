@@ -3,7 +3,7 @@ A full-stack CRUD app (Node/Express + MongoDB + React) implementing Plants and O
 
 Public URLs--EC2
 Frontend uses axios baseURL = http://16.176.185.99:5001
-Backend health (optional): http://52.63.158.152:5001/api/health
+Backend health (optional): http://16.176.185.99:5001/api/health
 
 Local URLs:
 Frontend uses http://localhost:3000
