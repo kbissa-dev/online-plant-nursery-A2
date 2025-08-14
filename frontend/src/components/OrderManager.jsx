@@ -14,7 +14,7 @@ export default function OrderManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const [pRes, oRes] = await Promise.all([api.get("/plants"), api.get("/orders")]);
+      const [pRes, oRes] = await Promise.all([api.get("/api/plants"), api.get("/api/orders")]);
       setPlants(pRes.data); setOrders(oRes.data); setMsg("");
     } catch (e) { setMsg(e?.response?.data?.message || "Failed to load data"); }
     finally { setLoading(false); }
@@ -35,14 +35,14 @@ export default function OrderManager() {
     const items = rows.filter(r => r.plant && Number(r.qty) > 0).map(r => ({ plant: r.plant, qty: Number(r.qty) }));
     if (!items.length) return setMsg("Add at least one item");
     try {
-      const { data } = await api.post("/orders", { items, deliveryFee: Number(deliveryFee || 0) });
+      const { data } = await api.post("/api/orders", { items, deliveryFee: Number(deliveryFee || 0) });
       setOrders(o => [data, ...o]); setRows([{ plant: "", qty: 1 }]); setDeliveryFee(0); setMsg("Order created");
     } catch (e) { setMsg(e?.response?.data?.message || "Order create failed"); }
   };
 
   const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
-    try { await api.delete(`/orders/${id}`); setOrders(o => o.filter(x => x._id !== id)); setMsg("Order deleted"); }
+    try { await api.delete(`/api/orders/${id}`); setOrders(o => o.filter(x => x._id !== id)); setMsg("Order deleted"); }
     catch (e) { setMsg(e?.response?.data?.message || "Delete failed"); }
   };
 
