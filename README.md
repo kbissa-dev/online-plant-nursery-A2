@@ -1,10 +1,13 @@
 Online Plant Nursery System
 A full-stack CRUD app (Node/Express + MongoDB + React) implementing Plants and Orders features with auth.
 
-Public URLs
-Frontend: http://52.63.158.152
-
+Public URLs--EC2
+Frontend uses axios baseURL = http://16.176.185.99:5001
 Backend health (optional): http://52.63.158.152:5001/api/health
+
+Local URLs:
+Frontend uses http://localhost:3000
+API base uses http://localhost:5001
 
 Demo login:-
 email:  
