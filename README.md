@@ -1,3 +1,77 @@
+Online Plant Nursery System
+A full-stack CRUD app (Node/Express + MongoDB + React) implementing Plants and Orders features with auth.
+
+Public URLs--EC2
+Frontend uses axios baseURL = http://16.176.185.99:5001
+Backend health (optional): http://16.176.185.99:5001/api/health
+
+Local URLs:
+Frontend uses http://localhost:3000
+API base uses http://localhost:5001
+
+Demo login:-
+email:  
+password: 
+
+
+JIRA Board (public link)
+https://khushboobissa.atlassian.net/jira/software/projects/OPNS/boards/37?atlOrigin=eyJpIjoiOGE3YTc3ZjdmZTVjNGQ2Y2I2ODFmZWU5Y2E2YTg4YTkiLCJwIjoiaiJ9
+Contains Epics for Plants & Orders; user stories and subtasks; sprint plan and sprint. 
+
+Features:-
+Plants: Create, view, update, delete plants.
+Orders: Create orders, view order history, update order status, cancel orders.
+Auth: Register, login, logout, profile update (pre-built).
+
+Frontend:- React; API consumption via Axios.
+Backend:- Node22, Express, Mongoose
+DB:- MongoDB
+CI/CD:- Github Actions-EC2(Ubuntu) with pm2 + nginx
+
+Local setup
+Prereqs:- Node 22, Git, VS Code and MongoDB Atlas connection string
+
+git clone https://github.com/Beginner2432/online-plant-nursery-system.git
+cd online-plant-nursery-system
+#Backend
+cd backend
+nano .env    # Keys for MONGO_URI = Atlas URI, JWT_SECRET , PORT=5001
+npm run install-all
+npm start
+
+# Frontend (new terminal)
+cd ../frontend
+yarn install
+yarn run build   # Frontend runs on http://localhost:3000 ; it talks to http://localhost:5001/api
+
+
+
+CI/CD Pipeline
+Workflow: .github/workflows/backend-ci.yml
+Install deps, run tests, build frontend, restart pm2 on EC2 runner
+EC2 process manager: pm2 (apps: backend, frontend)
+Reverse proxy: nginx (80 → frontend; frontend → API at :5001)
+How to redeploy: push to main. Action: Backend CI → green check.
+PM2 status on server: pm2 ls → both apps online.
+
+Branching & Commits
+Main = production
+Feature branches per story: feature/opns41-45-46-tests-work
+Commit messages include Jira key, e.g.:
+OPNS-41 OPNS-45 OPNS-46: Compare and Pull Request test
+
+Testing
+Backend unit tests: 'plantController' and 'orderController' using Mocha, Chai, Sinon.
+
+
+Run: cd backend && npm test
+Current status: 25 passing
+
+Known limitations:-
+Single EC2 instance-if the instanve goes down, the app is offline.
+Deploys are 'pm2 restart'.
+HTTP only- plain HTTP to public IP, demo-only. 
+
 
 **Assessment 1 (Total Marks **20**)**
 
