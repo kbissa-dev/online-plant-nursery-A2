@@ -11,6 +11,12 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Health probe for VM and Nginx
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/plants', require('./routes/plantRoutes')); // Plants CRUD
 app.use('/api/orders', require('./routes/orderRoutes')); // Orders CRUD
