@@ -32,7 +32,7 @@ CI/CD:- Github Actions-EC2(Ubuntu) with pm2 + nginx
 Local setup
 Prereqs:- Node 22, Git, VS Code and MongoDB Atlas connection string
 
-git clone https://github.com/Beginner2432/online-plant-nursery-system.git
+git clone https://github.com/kbissa-dev/online-plant-nursery-system.git
 cd online-plant-nursery-system
 #Backend
 cd backend
