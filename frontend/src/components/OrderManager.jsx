@@ -1,5 +1,4 @@
 // OPNS-26: tiny change to trigger Jira linking
-
 import { useEffect, useMemo, useState } from "react";
 import api from "../axiosConfig";
 
@@ -31,16 +30,44 @@ export default function OrderManager() {
   const changeRow = (i, key, val) => setRows(r => r.map((row, idx) => idx === i ? { ...row, [key]: val } : row));
 
   const createOrder = async (e) => {
-    e.preventDefault();
-    const items = rows.filter(r => r.plant && Number(r.qty) > 0).map(r => ({ plant: r.plant, qty: Number(r.qty) }));
-    if (!items.length) return setMsg("Add at least one item");
-    try {
-      const { data } = await api.post("/api/orders", { items, deliveryFee: Number(deliveryFee || 0) });
-      setOrders(o => [data, ...o]); setRows([{ plant: "", qty: 1 }]); setDeliveryFee(0); setMsg("Order created");
-    } catch (e) { setMsg(e?.response?.data?.message || "Order create failed"); }
-  };
+  e.preventDefault();
 
-  const del = async (id) => {
+  // Build items array with plant details
+  const items = rows
+    .filter(r => r.plant && Number(r.qty) > 0)
+    .map(r => {
+      const p = plantById[r.plant];
+      return {
+        plant: r.plant,
+        name: p.name,
+        price: Number(p.price),
+        qty: Number(r.qty)
+      };
+    });
+
+  if (!items.length) {
+    return setMsg("Add at least one item");
+  }
+
+  try {
+    const { data } = await api.post("/api/inventory/apply-order", {
+      items,
+      deliveryFee: Number(deliveryFee || 0),
+      // optional: shipping details 
+      // shipping: { name, line1, suburb, state, postcode }
+    });
+
+    // Update UI after success
+    setOrders(o => [data, ...o]);
+    setRows([{ plant: "", qty: 1 }]);
+    setDeliveryFee(0);
+    setMsg("Order created");
+  } catch (e) {
+    setMsg(e?.response?.data?.message || "Order create failed");
+  }
+};
+
+const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
     try { await api.delete(`/api/orders/${id}`); setOrders(o => o.filter(x => x._id !== id)); setMsg("Order deleted"); }
     catch (e) { setMsg(e?.response?.data?.message || "Delete failed"); }
