@@ -27,11 +27,16 @@ class InventoryManager {
   async adjustStock(plantId, delta) {
     delta = Number(delta || 0);
     const guard = delta < 0 ? { stock: { $gte: -delta } } : {};
-    const updated = await this.Plant.findOneAndUpdate(
+
+    // first get whatever the model returns (query or plain)
+    const ret = await this.Plant.findOneAndUpdate(
       { _id: plantId, ...guard },
       { $inc: { stock: delta } },
       { new: true }
-    ).lean();
+    );
+
+    // if it's a query-like (has .lean), call it; otherwise use as-is
+  const updated = ret && typeof ret.lean === 'function' ? await ret.lean() : ret;
 
     if (!updated) throw new Error('Insufficient stock or plant not found');
     this._emitLowStockIfNeeded(updated);
