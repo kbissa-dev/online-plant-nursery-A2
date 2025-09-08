@@ -90,7 +90,6 @@ class InventoryManager {
 }
 }
 
-
 module.exports = {
   InventoryManager,
   inventoryEvents,
