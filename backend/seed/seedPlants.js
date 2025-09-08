@@ -2,7 +2,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
-// ⬇️ Adjust this path only if your Plant model lives elsewhere
+// Adjust this path only if your Plant model lives elsewhere
 const Plant = require('../models/Plant');
 const data = require('./auPlants.json');
 
