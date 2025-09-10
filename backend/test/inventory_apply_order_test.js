@@ -12,41 +12,41 @@ describe('InventoryManager.applyOrder', () => {
 
     // Minimal Plant model stub WITH findOneAndUpdate().lean()
 const Plant = {
-    async findOneAndUpdate(query, update /* , options */) {
-        const id = query._id;
-        const delta = (update && update.$inc && update.$inc.stock) || 0;
-        const p = plants[id];
-        if (!p) return null;
-    // enforce guard: don't allow negative result
-        if ((p.stock + delta) < 0) return null;
-        p.stock += delta;
+  findOneAndUpdate(query, update /* , options */) {
+    const id = query._id;
+    const delta = (update && update.$inc && update.$inc.stock) || 0;
+    const p = plants[id];
+    if (!p) return null;
 
-    // IMPORTANT: return a "query-like" object where .lean() returns a *Promise*
-       return {
-        async lean() { return { ...p }; },
+    // enforce guard: don't allow negative result
+    if ((p.stock + delta) < 0) return null;
+    p.stock += delta;
+
+    // return a "query-like" object where .lean() returns a *Promise*
+    return {
+      lean: async () => ({ ...p }),
     };
   },
 
-  async findById(id) {
+  findById(id) {
     const p = plants[id];
-    return p ? { async lean() { return { ...p }; } } : null;
+    return p ? { lean: async () => ({ ...p }) } : null;
   },
 
-  async find(query) {               // used by listLowStock in other tests
+  // used by listLowStock in other tests
+  find(query) {
     const max = query?.stock?.$lte ?? Infinity;
     const arr = Object.values(plants).filter(x => x.stock <= max);
     return {
       select() {
         return {
-          async lean() {
-            return arr.map(x => ({ name: x.name, stock: x.stock, category: 1 }));}
-        };
-       }
-    };
-   }
-};
-
-
+          lean: async () => arr.map(x => ({ name: x.name, stock: x.stock, category: 1 })),
+          };
+        },
+      };
+    },
+  };
+  
     // Order model stub: capture what would be created
     let createdOrder = null;
     const Order = {
@@ -100,7 +100,7 @@ const Plant = {
   it('rejects when items is missing or empty', async () => {
     const Plant = { findOneAndUpdate: async () => null };
     const Order = {};
-    const manager = new InventoryManager({ PlantModel: Plant, OrderModel: Order });
+    const manager = new InventoryManager({ PlantModel: Plant, OrderModel: Order,});
 
     try {
       await manager.applyOrder({ items: [] });
