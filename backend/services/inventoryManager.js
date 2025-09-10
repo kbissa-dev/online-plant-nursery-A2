@@ -1,5 +1,7 @@
 // backend/services/inventoryManager.js
 const EventEmitter = require('events');
+const { StripeAdapter, PaypalAdapter } = require('../payments/paymentAdapter');
+
 
 class InventoryEvents extends EventEmitter {}
 const inventoryEvents = new InventoryEvents();
@@ -51,34 +53,41 @@ class InventoryManager {
   }
 
   // ---- Orders that also reduce stock ----
-  async applyOrder({ userId, items = [], deliveryFee = 0, shipping = null }) {
-    if (!Array.isArray(items) || items.length === 0) {
-      throw new Error('Order must have at least one item');
-    }
-
-    // Check + decrement stock
-    for (const it of items) {
-      const updated = await this.adjustStock(it.plant, -it.qty);
-      if (!updated) throw new Error(`Insufficient stock for plant ${it.plant}`);
-    }
-
-    // Snapshot: subtotal + total
-    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-    const total = subtotal + Number(deliveryFee || 0);
-
-    // Create Order document
-    const order = await this.Order.create({
-      items,
-      subtotal,
-      deliveryFee,
-      total,
-      status: 'paid',
-      shipping,
-      createdBy: userId || null,
-    });
-
-    return order.toObject();
+ async applyOrder({ userId, items = [], deliveryFee = 0, shipping = null, provider = 'stripe' }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('Order must have at least one item');
   }
+
+  // Check & decrement stock
+  for (const it of items) {
+    const updated = await this.adjustStock(it.plant, -it.qty);
+    if (!updated) throw new Error(`Insufficient stock for plant ${it.plant}`);
+  }
+
+  // Snapshot: subtotal + total
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const total = subtotal + Number(deliveryFee || 0);
+
+  // --- Payment (Adapter pattern) ---
+  const payment = provider === 'paypal' ? new PaypalAdapter() : new StripeAdapter();
+  const receipt = await payment.charge(total, { userId });
+
+  // Create Order document
+  const order = await this.Order.create({
+    items,
+    subtotal,
+    deliveryFee,
+    total,
+    status: 'paid',
+    provider,          // 'stripe' or 'paypal'
+    receiptId: receipt.id, // receiptID field
+    shipping,
+    createdBy: userId || null,
+  });
+
+  console.log("💳", provider, "charging", total, "→ receipt", receipt.id);
+  return order.toObject();
+}
 }
 
 module.exports = {
