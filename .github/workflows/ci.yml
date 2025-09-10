@@ -41,7 +41,7 @@ jobs:
       
     - run: pm2 stop all || true
 
-    # Install dependencies for backend
+    # Install dependencies for backend - first
     - name: Install Backend Dependencies
       working-directory: ./backend
       run: | 
@@ -49,7 +49,7 @@ jobs:
        yarn --version
        yarn install
       
-    # Install dependencies for frontend
+    # Install dependencies for frontend - first
     - name: Install Frontend Dependencies
       working-directory: ./frontend
       run: |
