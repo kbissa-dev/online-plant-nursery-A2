@@ -1,4 +1,3 @@
-// OPNS-26: tiny change to trigger Jira linking
 import { useEffect, useMemo, useState } from "react";
 import api from "../axiosConfig";
 import PaymentSelector from "../components/PaymentSelector";
@@ -11,6 +10,7 @@ export default function OrderManager() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [provider, setProvider] = useState("stripe");
+  const [processing, setProcessing] = useState(false); //added for payment process (mock)
 
   const load = async () => {
     setLoading(true);
@@ -28,6 +28,7 @@ export default function OrderManager() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     load();
   }, []);
@@ -53,53 +54,76 @@ export default function OrderManager() {
       )
     );
 
+  const processPayment = async (amount, provider) => {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // generate mock receipt
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1234);
+    const receiptId = `${provider.toUpperCase()}_${timestamp}_${random}`;
+    
+    return {
+      receiptId,
+      provider,
+      amount: amount.toFixed(2),
+      status: 'completed',
+      timestamp: new Date().toISOString()
+    };
+  };
+
   const createOrder = async (e) => {
     e.preventDefault();
+    
     // Build items array with plant details
     const items = rows
-    .filter(r => r.plant && Number(r.qty) > 0)
-    .map(r => { 
-      const p = plantById[r.plant];
-      return {
-        plant: r.plant,
-        name: p?.name,
-        price: Number(p?.price ?? 0),
-        qty: Number(r.qty)
-      };
-    });
+      .filter(r => r.plant && Number(r.qty) > 0)
+      .map(r => { 
+        const p = plantById[r.plant];
+        return {
+          plant: r.plant,
+          name: p?.name,
+          price: Number(p?.price ?? 0),
+          qty: Number(r.qty)
+        };
+      });
+    
     if (!items.length){
       return setMsg("Add at least one item");
     }
- 
+
+    setProcessing(true);
+    setMsg("Processing payment...");
+    
     try {
+      const paymentResult = await processPayment(total, provider);
+      
+      setMsg("Payment successful. Creating order...");
+      
       const { data } = await api.post("/api/inventory/apply-order", {
-         items,
-         deliveryFee: Number(deliveryFee || 0),
-         // new fields from payment-adapter
-         provider, // "stripe" | "paypal"
-         receiptId, // returned by payment API
-         });
+        items,
+        deliveryFee: Number(deliveryFee || 0),
+        provider: paymentResult.provider,
+        receiptId: paymentResult.receiptId,
+      });
 
-         // log to browser console
-        console.log(`💳 [Frontend] ${provider} charging $${data?.total ?? "?"} → receipt ${data.receiptId ?? "N/A"}`);
+      console.log(`💳 [Frontend] ${provider} charged $${data?.total ?? "?"} → receipt ${data.receiptId ?? "N/A"}`);
 
-         // Update UI after success
-
-         setOrders((o) => [data, ...o]);
-         setRows([{ plant: "", qty: 1 }]);
-         setDeliveryFee(0);
-         
-         // Enhanced success message
-        setMsg(
-          `Order created via ${data.provider || "N/A"} (receipt ${data.receiptId || "N/A"} })`
-        );
+      setOrders((o) => [data, ...o]);
+      setRows([{ plant: "", qty: 1 }]);
+      setDeliveryFee(0);
+      
+      setMsg(
+        `Order created successfully. Payment: ${data.provider || "N/A"} (${data.receiptId || "N/A"})`
+      );
     } catch (e) {
-      console.error("Order create failed", e);
-      setMsg(e?.response?.data?.message || "Order create failed");
-       }
+      console.error("Order/Payment failed", e);
+      setMsg(e?.response?.data?.message || e.message || "Order creation failed");
+    } finally {
+      setProcessing(false);
+    }
   };
 
-const del = async (id) => {
+  const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
     try {
       await api.delete(`/api/orders/${id}`);
@@ -114,7 +138,12 @@ const del = async (id) => {
     <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
       <h1>Order Manager</h1>
       {msg && (
-        <div style={{ background: "#f8f9ff", border: "1px solid #e6e8ff", padding: 8 }}>
+        <div style={{ 
+          background: msg.includes("success") ? "#e8f5e9" : "#f8f9ff", 
+          border: `1px solid ${msg.includes("success") ? "#4caf50" : "#e6e8ff"}`, 
+          padding: 8,
+          color: msg.includes("failed") || msg.includes("error") ? "#d32f2f" : "inherit"
+        }}>
           {msg}
         </div>
       )}
@@ -177,8 +206,12 @@ const del = async (id) => {
             <strong>Total: ${total.toFixed(2)}</strong>
           </div>
         </div>
+        
         <PaymentSelector value={provider} onChange={setProvider} />
-        <button type="submit">Create Order</button>
+        
+        <button type="submit" disabled={processing}>
+          {processing ? "Processing Payment..." : "Create Order"}
+        </button>
       </form>
 
       <hr style={{ margin: "16px 0" }} />
