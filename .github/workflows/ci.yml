@@ -39,9 +39,9 @@ jobs:
         echo "Secret 2 is: $JWT_SECRET"
         echo "Secret 3 is: $PORT"
       
-    - run: pm2 stop all || true
+    - run: pm2 stop all
 
-    # Install dependencies for backend - first
+    # Install dependencies for backend
     - name: Install Backend Dependencies
       working-directory: ./backend
       run: | 
@@ -49,7 +49,7 @@ jobs:
        yarn --version
        yarn install
       
-    # Install dependencies for frontend - first
+    # Install dependencies for frontend
     - name: Install Frontend Dependencies
       working-directory: ./frontend
       run: |
@@ -75,8 +75,5 @@ jobs:
         touch .env
         echo "${{ secrets.PROD }}" > .env
 
-    - run: pm2 start all || true
-
-    - run: pm2 restart all  || true
-    
-    # demo1
+    - run: pm2 start all
+    - run: pm2 restart all
