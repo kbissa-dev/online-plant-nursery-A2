@@ -59,7 +59,7 @@ export default function OrderManager() {
     
     // generate mock receipt
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1234);
+    // const random = Math.floor(Math.random() * 1234);
     const receiptId = `${provider.toUpperCase()}_${timestamp}`;
     
     return {
