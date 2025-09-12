@@ -55,18 +55,18 @@ export default function OrderManager() {
     );
 
   const processPayment = async (amount, provider) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1500));  // simulate latency
     
     // generate mock receipt
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1234);
-    const receiptId = `${provider.toUpperCase()}_${timestamp}_${random}`;
+    const receiptId = `${provider.toUpperCase()}_${timestamp}`;
     
     return {
       receiptId,
       provider,
       amount: amount.toFixed(2),
-      status: 'completed',
+      status: "completed",
       timestamp: new Date().toISOString()
     };
   };
@@ -106,7 +106,7 @@ export default function OrderManager() {
         receiptId: paymentResult.receiptId,
       });
 
-      console.log(`💳 [Frontend] ${provider} charged $${data?.total ?? "?"} → receipt ${data.receiptId ?? "N/A"}`);
+      console.log(`💳 [Frontend] ${provider} charged $${data?.total ?? "?"} → receipt ${paymentResult.receiptId ?? "N/A"}`);
 
       setOrders((o) => [data, ...o]);
       setRows([{ plant: "", qty: 1 }]);
