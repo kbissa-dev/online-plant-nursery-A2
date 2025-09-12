@@ -9,8 +9,7 @@ export default function OrderForm({ cartItems }) {
     try {
       const { data } = await api.post("/api/orders", {
         items: cartItems,
-        giftWrap,
-        warranty
+        giftWrap, // only send giftWrap flag
       });
       setResult(data);
     } catch (err) {
@@ -22,12 +21,12 @@ export default function OrderForm({ cartItems }) {
     <div>
       <h3>Extras</h3>
       <label>
-        <input type="checkbox" checked={giftWrap} onChange={() => setGiftWrap(!giftWrap)} />
+        <input
+          type="checkbox"
+          checked={giftWrap}
+          onChange={() => setGiftWrap(!giftWrap)}
+        />
         Gift Wrap (+$5)
-      </label>
-      <label>
-        <input type="checkbox" checked={warranty} onChange={() => setWarranty(!warranty)} />
-        Warranty (+$10)
       </label>
 
       <button onClick={handleSubmit}>Place Order</button>
