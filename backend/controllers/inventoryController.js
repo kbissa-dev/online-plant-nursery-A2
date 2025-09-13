@@ -39,15 +39,12 @@ exports.listLowStock = async (_req, res) => {
 // ---- Orders (with stock reduction) ----
 exports.applyOrder = async (req, res) => {
   try {
-    const payload = {
-      userId: req.user?.id,
-      items: req.body.items,
-      deliveryFee: req.body.deliveryFee,
-      shipping: req.body.shipping,
-    };
-    const order = await manager.applyOrder(payload);
+    console.log('>> /api/apply-order hit', req.body);   // TRACE
+    const order = await manager.applyOrder(req.body);
+    console.log('<< applyOrder ok', { id: order._id, provider: order.provider, receiptId: order.receiptId }); // TRACE
     res.status(201).json(order);
   } catch (err) {
+    console.error('!! applyOrder error', err.message);
     res.status(400).json({ message: err.message });
   }
 };

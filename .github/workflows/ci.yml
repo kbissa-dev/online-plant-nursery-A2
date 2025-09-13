@@ -39,7 +39,7 @@ jobs:
         echo "Secret 2 is: $JWT_SECRET"
         echo "Secret 3 is: $PORT"
       
-    - run: pm2 stop all || true
+    - run: pm2 stop all  || true
 
     # Install dependencies for backend
     - name: Install Backend Dependencies
@@ -58,7 +58,7 @@ jobs:
         yarn install
         yarn run build
 
-
+        
     # Run backend tests
     - name: Run Backend Tests
       env:
@@ -78,4 +78,3 @@ jobs:
     - run: pm2 start all || true
 
     - run: pm2 restart all  || true
-    # demo
