@@ -76,7 +76,7 @@ const del = async (id) => {
   return (
     <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
       <h1>Order Manager</h1>
-      {msg && <div style={{ background: "#f8f9ff", border: "1px solid #e6e8ff", padding: 8 }}>{msg}</div>}
+      {msg && <div style={{ background: "#f8f9ff", border: "1px solid #e6e8ff", padding: 10 }}>{msg}</div>}
 
       <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
         <h3>Create Order</h3>

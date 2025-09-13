@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Make the app fill the viewport and use a single background everywhere */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #ecfdf5;   /* very light green (mint) */
+}
+
+/* Optional: a simple content container */
+.app-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
