@@ -89,8 +89,8 @@ cp .env.example .env
 # JWT_SECRET=your_jwt_secret_here
 # PORT=5001
 npm run dev
-
 ```
+
 The backend server will run on `http://localhost:5001`
 
 ### 3. Frontend Setup
@@ -103,6 +103,7 @@ npm install
 # Start the React development server
 npm start
 ```
+
 The frontend will run on `http://localhost:3000`
 
 ### 4. Database Setup
