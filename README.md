@@ -1,169 +1,151 @@
-Online Plant Nursery System
-A full-stack CRUD app (Node/Express + MongoDB + React) implementing Plants and Orders features with auth.
+# Online Plant Nursery System
 
-Public URLs--EC2
-Uses axios baseURL = http://13.106.244.13:5001
-Backend health (optional): http://13.106.244.13:5001/api/health
-Frontend: http://3.106.244.13:3000
+A full-stack MERN web application for an online plant nursery store.
+It is built as a part of IFN636 Software Lifecycle Management coursework.
 
-Local URLs:
-Frontend uses http://localhost:3000
-API base uses http://localhost:5001
+## Live Application
 
-Demo login:-
-email:  
-password: 
+**Public URL**: [http://ec2-15-134-76-47.ap-southeast-2.compute.amazonaws.com/]
 
+## Local URLs
 
-JIRA Board (public link)
-https://khushboobissa.atlassian.net/jira/software/projects/OPNS/boards/37?atlOrigin=eyJpIjoiOGE3YTc3ZjdmZTVjNGQ2Y2I2ODFmZWU5Y2E2YTg4YTkiLCJwIjoiaiJ9
-Contains Epics for Plants & Orders; user stories and subtasks; sprint plan and sprint. 
+**Frontend**: [http://localhost:3000]
+**Backend**: [http://localhost:5001] for API testing
 
-Features:-
-Plants: Create, view, update, delete plants.
-Orders: Create orders, view order history, update order status, cancel orders.
-Auth: Register, login, logout, profile update (pre-built).
+## Demo Credentials
 
-Frontend:- React; API consumption via Axios.
-Backend:- Node22, Express, Mongoose
-DB:- MongoDB
-CI/CD:- Github Actions-EC2(Ubuntu) with pm2 + nginx
+New credentials can be created by using "Register" button on the top right corner of the webpage or existing credentials are as follow:
+- **Staff (Green Plant Nursery Staff)**:
+  - Email: `staff@email.com`
+  - Password: `StaffPass123`
 
-Local setup
-Prereqs:- Node 22, Git, VS Code and MongoDB Atlas connection string
+- **Customers (Registered Users)**:
+  - Email: `customer@email.com`
+  - Password: `CustomerPass123`
 
-git clone https://github.com/kbissa-dev/online-plant-nursery-system.git
-cd online-plant-nursery-system
-#Backend
+## System Overview
+
+This web application provides role based functionality for an online plant nursery with JWT-based authentication and session management.
+
+### User Roles and Permissions:
+
+- **Staff (Green Plant Nursery Staff)**:
+  - Create new plant products
+  - View all plant inventory
+  - Update plant details and stock levels
+  - Delete plant products
+
+- **Customers (Registered Users)**:
+  - Browse plant catalog (registration required)
+  - Add plants to shopping cart
+  - View and modify cart contents
+  - Update item quantities in cart
+  - Remove items from cart
+  - Create orders from cart contents
+  - Cancel pending orders
+  - Persistent cart across sessions
+
+- **Authentication System**:
+  - User registration and account creation
+  - Login with JWT token issued upon successful authentication
+  - Logout functionality with token management
+  - Profile update capabilities for authenticated users
+  - Role based access control (staff vs customer permissions)
+
+## Tech Stack
+
+- **Frontend**: React.js (Create React App)
+- **Backend**: Node.js with Express.js
+- **Database**: MongoDB Atlas
+- **Testing**: Mocha, Chai, Sinon
+- **Deployment (CI/CD)**: AWS EC2 with GitHub Actions
+
+## Prerequisites
+
+Before running this project locally, ensure you have:
+- Node.js (v22 or higher)
+- npm or yarn
+- MongoDB Atlas account and cluster
+- Git
+
+## Development Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/kbissa-dev/online-plant-nursery-A2.git
+cd online-plant-nursery-A2
+```
+
+### 2. Backend Setup
+
+```bash
 cd backend
-nano .env    # Keys for MONGO_URI = Atlas URI, JWT_SECRET , PORT=5001
-npm run install-all
+npm install
+cp .env.example .env
+# Configure your environment variables in .env:
+
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/online-plant-nursery-A2
+# JWT_SECRET=your_jwt_secret_here
+# PORT=5001
+npm run dev
+
+```
+The backend server will run on `http://localhost:5001`
+
+### 3. Frontend Setup
+
+```bash
+# Navigate to frontend directory (open new terminal)
+cd frontend
+# Install dependencies
+npm install
+# Start the React development server
 npm start
+```
+The frontend will run on `http://localhost:3000`
 
-# Frontend (new terminal)
-cd ../frontend
-yarn install
-yarn run build   # Frontend runs on http://localhost:3000 ; it talks to http://localhost:5001/api
+### 4. Database Setup
 
+Update your `.env` file with your MongoDB Atlas connection string.
 
+## Available Scripts
 
-CI/CD Pipeline
-Workflow: .github/workflows/backend-ci.yml
-Install deps, run tests, build frontend, restart pm2 on EC2 runner
-EC2 process manager: pm2 (apps: backend, frontend)
-Reverse proxy: nginx (80 → frontend; frontend → API at :5001)
-How to redeploy: push to main. Action: Backend CI → green check.
-PM2 status on server: pm2 ls → both apps online.
+### Frontend Scripts
 
-Branching & Commits
-Main = production
-Feature branches per story: feature/opns41-45-46-tests-work
-Commit messages include Jira key, e.g.:
-OPNS-41 OPNS-45 OPNS-46: Compare and Pull Request test
+In the `frontend` directory:
+#### `npm start`
 
-Testing
-Backend unit tests: 'plantController' and 'orderController' using Mocha, Chai, Sinon.
+Runs the React app in development mode on [http://localhost:3000](http://localhost:3000).
 
+### Backend Scripts
 
-Run: cd backend && npm test
-Current status: 25 passing
+In the `backend` directory:
+#### `npm run dev`
+Starts the backend server with nodemon for development.
+#### `npm test`
+Runs backend tests.
 
-Known limitations:-
-Single EC2 instance-if the instanve goes down, the app is offline.
-Deploys are 'pm2 restart'.
-HTTP only- plain HTTP to public IP, demo-only. 
+## CI/CD Pipeline
 
+### Deployment Workflow: `.github/workflows/backend-ci.yml`
 
-**Assessment 1 (Total Marks **20**)**
+#### Process
+1. Install dependencies and run tests
+2. Build frontend for production
+3. Deploy to AWS EC2 instance
+4. Restart services using PM2 process manager
 
-Assignment: **Software requirements analysis and design (**Full-Stack CRUD Application Development with DevOps Practices**)**
+#### Infrastructure
+- **Process Manager**: PM2 - manages backend process and serves built frontend
+- **Reverse Proxy**: Nginx - routes port 80 to build React static files and API requests to backend (port 5001)
+- **Deployment Trigger**: Push to main branch
 
+**Deployment Status**: Check GitHub Actions for build success, verify with `pm2 status` on server.
 
----
+## Known Limitations
 
-**Objective**
-
-You have been provided with a starter project that includes user authentication using Node.js, React.js, and MongoDB. Your task is to extend this application by implementing CRUD (Create, Read, Update, Delete) operations of different featuresfor a real-world application of your choice, while following industry best practices such as: 
-
-* **Project Management with JIRA**
-* **Requirement Diagram**, **Block Definition Diagram (**BDD), Parametric Diagram using**SysML**
-* **Version Control using GitHub**
-* **CI/CD Integration for Automated Deployment**
-
----
-
-**GitHub link of the starter project: **[https://github.com/rajuiit/sdlapps](https://github.com/rajuiit/sdlapps)
-
----
-
-**Requirement**
-
-1. **Choose a Real-World Application**
-
-We will send you an email to choose a Real-World project. If you face any difficulties in choosing your project, please contact your tutor.
-
-2. **Project Design with SysML and Project Management with JIRA**
-
-* Draw a requirements diagram, Block Definition Diagram (BDD), and Parametric Diagram based on your project (Connect all functional features).
-* Create a JIRA project and define:
-  * Epic
-  * User Stories (features required in your app)
-  * Child issues or Subtasks (breaking down development work)
-  * Sprint Implementation (organizing work into milestones)
-* Provide your JIRA board URL in the project README.
-
-**3. Backend Development (Node.js + Express + MongoDB)**
-
-* Set up and configure the MongoDB database connection.
-* Implement various backend functions for handling application data.Ensure that all functions are compatible with an Application Programming Interface (API) structure(Follow existing patterns used in the Task Manager App where applicable).
-* Implement CRUD operations forcreating, reading, updating, and deleting records for each functionality.
-
-4. **Frontend Development (React.js)**
-
-* Create a user-friendly interface to interact with your API endpoint (Follow task manager app).
-* Implement different forms for adding, updating, and deleting records.
-* Display data using tables, cards, or lists (Follow how we showed data in task manager app, try to implement better visualization for the frontend.)
-
-**5. Authentication & Authorization** (Prerequisite Task)
-
-* Ensure only authenticated users can access and perform CRUD operations. (Already developed in your project)
-* Use JWT (JSON Web Tokens) for user authentication (Use the task manager one from .env file).
-
-**6. GitHub Version Control & Branching Strategy**
-
-* Use GitHub for version control and maintain:
-* main branch (stable production-ready code)
-* Feature branches for each new feature
-* Follow proper commit messages and pull request (PR) for code reviews.
-
-**7. CI/CD Pipeline Setup**
-
-* Implement a CI/CD pipeline using GitHub Actions to:
-* Automatically run tests on every commit/pull request (Optional).
-* Deploy the backend to AWS. (Use the QUT provided EC2 instance)
-* Deploy the frontend to AWS.
-* Document your CI/CD workflow in the README.
-
----
-
-**Submission Requirements**
-
-**A report **contains** the following (Provide screenshots as evidence for each implemented task. **The screenshot should **contain** your username** from JIRA, GITHUB, and AWS**):
-
-* **JIRA Project **Management**(Provide screenshots in the **report o**f at least two epics**, **including user story, sub**t**a**sks**. **Please **don’t** provide **the **U**ser Authentication** epic**.**Provide your JIRA Board URL in the report and README file as well.**Through the JIRA Board, we will systematically review the completeness of the project features, organised under Epics, User Stories, and Sub-tasks.**
-* Requirement diagram, Block Definition Diagram (BDD), Parametric Diagram (Using project features).
-* **GitHub Repository (backend/ and frontend/)** link. We will **review** your code implementation, which you followed from the task description. We will also **review** your commits, main branch, feature branches, and pull requests. **(**Please note that the authorisation** (Log In, Registration)** is the prerequisite for backend development.**)**
-* CI/CD pipeline details step by step screenshot.
-* README.md with:
-* Project setup instructions.
-* Public URL of your project.
-* Provide a project-specific username and password if we need to access your dashboard.
-
----
-
-**Assessment Criteria:**
-
-* Clarity and completeness of Jira board and SysML models.
-* Adherence to Git best practices and practical contributions.
-* Successful implementation, deploymentand CI/CD pipeline.
-* Problem-solving skills and the ability to go beyond basic requirements.
+- **Single Point of Failure**: Application runs on single EC2 instance with no redundancy
+- **Deployment Strategy**: Uses PM2 restart without zero downtime deployment
+- **Security**: HTTP only configuration suitable for development or demo purposes only
+- **Database**: No backup or disaster recovery implementation
