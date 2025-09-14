@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../axiosConfig";
+import PlantCard from "./PlantCard";
 
 export default function PlantManager() {
   const empty = { name: "", price: "", stock: 0, category: "", description: "" };
@@ -57,46 +58,47 @@ export default function PlantManager() {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
+    <div style={{ maxWidth: 900, margin: "24px auto", padding: 16,color: "olive" }}>
       <h1>Plant Manager</h1>
-      {msg && <div style={{ background: "#f8f9ff", border: "1px solid #e6e8ff", padding: 8 }}>{msg}</div>}
+      {msg && <div style={{ background: "#f8f9ff", border: "1px solid #e6e8ff", padding: 10 }}>{msg}</div>}
 
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(6,1fr)", marginTop: 8 }}>
+      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12,
+        gridTemplateColumns: "1.2fr 0.8fr 0.5fr 1fr 2fr auto",
+        alignItems: "center", margin: "8px 0 20px"}}>
         <input name="name" placeholder="Name" value={form.name} onChange={onChange} required />
         <input name="price" type="number" step="0.01" placeholder="Price" value={form.price} onChange={onChange} required />
         <input name="stock" type="number" placeholder="Stock" value={form.stock} onChange={onChange} />
         <input name="category" placeholder="Category" value={form.category} onChange={onChange} />
         <input name="description" placeholder="Description" value={form.description} onChange={onChange} />
-        <button type="submit">{editingId ? "Update" : "Add"} Plant</button>
+        <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded" 
+        style={{padding: "10px 14px", borderRadius: 10, whiteSpace: "nowrap",      // prevents  wrapping
+          lineHeight: 1,             // nice vertical rhythm
+        // height: 40,
+        }}
+        >{editingId ? "Update" : "Add"} Plant</button>
       </form>
 
       <hr style={{ margin: "16px 0" }} />
 
       {loading ? <p>Loading…</p> : plants.length === 0 ? <p>No plants yet</p> : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th align="left">Name</th><th>Price</th><th>Stock</th>
-              <th align="left">Category</th><th align="left">Description</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {plants.map((p) => (
-              <tr key={p._id}>
-                <td>{p.name}</td>
-                <td align="center">${Number(p.price).toFixed(2)}</td>
-                <td align="center">{p.stock}</td>
-                <td>{p.category}</td>
-                <td>{p.description}</td>
-                <td align="center">
-                  <button onClick={() => edit(p)}>Edit</button>{" "}
-                  <button onClick={() => del(p._id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+          gap: 20
+        }}
+      >
+        {plants.map((p) => (
+          <PlantCard
+            key={p._id}
+            p={p}
+            mode="admin"
+            onEdit={edit}
+            onDelete={del}
+          />
+        ))}
+      </div>
+    )}
     </div>
   );
 }
