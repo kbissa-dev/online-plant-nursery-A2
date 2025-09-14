@@ -2,40 +2,51 @@ const mongoose = require('mongoose');
 
 const OrderItemSchema = new mongoose.Schema({
   plant: { type: mongoose.Schema.Types.ObjectId, ref: 'Plant', required: true },
-  name: { type: String, required: true },   // snapshot name at time of order
-  price: { type: Number, required: true },  // snapshot price at time of order
-  qty:   { type: Number, required: true, min: 1 }
+  name:  { type: String,  required: true },   // snapshot name
+  price: { type: Number,  required: true, min: 0 },
+  qty:   { type: Number,  required: true, min: 1 }
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema(
   {
-    // Array of purchased items in this order
-    items: [
-      {
-        name: String, // snapshot of plant name at time of order
-        plant: { type: mongoose.Schema.Types.ObjectId, ref: 'Plant' }, // reference to Plant collection
-        price: Number, // unit price at time of order
-        qty: Number,   // quantity ordered
-      }
-    ],
+    // Items purchased (use the sub-schema so validation actually runs)
+    items: { type: [OrderItemSchema], required: true, default: [] },
 
-    // Financials 
-    subtotal: Number,   // sum of item.price * qty
-    deliveryFee: Number, // delivery fee applied
-    total: Number,       // subtotal + deliveryFee
-    status: { type: String, default: 'paid' },  // order status (paid, penidng, refunded, etc.)
+    // Financials
+    subtotal:    { type: Number, default: 0, min: 0 },
+    deliveryFee: { type: Number, default: 0, min: 0 },
+    total:       { type: Number, default: 0, min: 0 },
 
-    // Payment setails (added for Adapter pattern demo)
-    provider: { type: String, enum: ['stripe', 'paypal'], default: null },  // which gateway was used
-    receiptId: { type: String, default: null },  // confirmation/transaction id from provider
-    
-    // Shipping details 
-    shipping: Object,  // hold address, courier, etc.
+    // IMPORTANT: default to 'pending' so your canCancel() shows the button
+    status: { 
+      type: String, 
+      enum: ['pending', 'paid', 'cancelled'], 
+      default: 'pending' 
+    },
 
-    // User reference
+    // Payment details (note: for null, either drop enum
+    // when null, or include null in the allowed values)
+    provider:  { type: String, enum: ['stripe', 'paypal'], default: undefined },
+    receiptId: { type: String, default: null },
+
+    // Shipping details
+    shipping: { type: Object, default: null },
+
+    // Who placed it
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
-  { timestamps: true }  // auto-adds createdAt and updatedAt
+  { timestamps: true }
 );
+
+// Keep total consistent if caller forgets to send it
+OrderSchema.pre('save', function(next) {
+  if (this.isModified('subtotal') || this.isModified('deliveryFee') || this.isNew) {
+    this.total = Number(this.subtotal || 0) + Number(this.deliveryFee || 0);
+  }
+  next();
+});
+
+// My orders”)
+OrderSchema.index({ createdBy: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Order', OrderSchema);
