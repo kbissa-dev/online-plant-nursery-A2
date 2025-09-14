@@ -39,8 +39,19 @@ exports.listLowStock = async (_req, res) => {
 // ---- Orders (with stock reduction) ----
 exports.applyOrder = async (req, res) => {
   try {
-    console.log('>> /api/apply-order hit', req.body);   // TRACE
-    const order = await manager.applyOrder(req.body);
+    const payload = 
+    {
+      userId: req.user?._id, //undefined locally if auth is off
+      items: req.body.items,
+      deliveryFee: req.body.deliveryFee,
+      shipping: req.body.shipping ?? null,
+      provider: req.body.provider || 'stripe',
+      receiptId: req.body.receiptId ?? null,
+      channels: req.body.channels || ['toast'],
+
+    };
+    console.log('>> /api/apply-order hit', payload);   // TRACE
+    const order = await manager.applyOrder(payload);
     console.log('<< applyOrder ok', { id: order._id, provider: order.provider, receiptId: order.receiptId }); // TRACE
     res.status(201).json(order);
   } catch (err) {

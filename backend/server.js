@@ -20,13 +20,21 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/plants', require('./routes/plantRoutes')); // Plants CRUD
 app.use('/api/orders', require('./routes/orderRoutes')); // Orders CRUD
-app.use('/api', require('./routes/inventoryRoutes'));
+// app.use('/api', require('./routes/inventoryRoutes'));
 
 
 // InventoryManager routes
 app.use('/api/inventory', require('./routes/inventoryRoutes')); 
 
-// Export the app object for testing
+// Basic error handling
+app.use((req, res) => res.status(404).json({ message: 'Not found' }));
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: err.message || 'Server error' });
+});
+
+// Start only when run directly
 if (require.main === module) {
     connectDB().then(()=> {
       // Register subscribers AFTER DB is ready
@@ -37,4 +45,5 @@ if (require.main === module) {
       app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     });
   }
+
 module.exports = app

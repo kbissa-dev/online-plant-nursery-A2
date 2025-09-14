@@ -4,7 +4,7 @@
   "description": "Backend for Task Manager App",
   "main": "server.js",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha --exit --timeout 8000",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "prod": "node server.js"

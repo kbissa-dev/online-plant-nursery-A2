@@ -3,72 +3,86 @@ const { expect } = require('chai');
 const { InventoryManager, inventoryEvents } = require('../services/inventoryManager');
 
 describe('InventoryManager.applyOrder', () => {
+  afterEach(() => {
+    // avoid test cross-talk from lingering listeners
+    inventoryEvents.removeAllListeners();
+  });
+
   it('decrements stock, creates order, and emits low-stock when threshold crossed', async () => {
     // In-memory "DB"
     const plants = {
-      rose:   { _id: 'rose',   name: 'Rose',   price: 22, stock: 8 },
-      lemon:  { _id: 'lemon',  name: 'Lemon',  price: 30, stock: 7 },
+      rose:  { _id: 'rose',  name: 'Rose',  price: 22, stock: 8 },
+      lemon: { _id: 'lemon', name: 'Lemon', price: 30, stock: 7 },
     };
 
     // Minimal Plant model stub WITH findOneAndUpdate().lean()
-const Plant = {
-  findOneAndUpdate(query, update /* , options */) {
-    const id = query._id;
-    const delta = (update && update.$inc && update.$inc.stock) || 0;
-    const p = plants[id];
-    if (!p) return null;
+    const Plant = {
+      findOneAndUpdate(query, update /* , options */) {
+        const id = query._id;
+        const delta = (update && update.$inc && update.$inc.stock) || 0;
+        const p = plants[id];
+        if (!p) return null;
 
-    // enforce guard: don't allow negative result
-    if ((p.stock + delta) < 0) return null;
-    p.stock += delta;
+        // guard: do not allow negative result
+        if (p.stock + delta < 0) return null;
+        p.stock += delta;
 
-    // return a "query-like" object where .lean() returns a *Promise*
-    return {
-      lean: async () => ({ ...p }),
-    };
-  },
-
-  findById(id) {
-    const p = plants[id];
-    return p ? { lean: async () => ({ ...p }) } : null;
-  },
-
-  // used by listLowStock in other tests
-  find(query) {
-    const max = query?.stock?.$lte ?? Infinity;
-    const arr = Object.values(plants).filter(x => x.stock <= max);
-    return {
-      select() {
+        // emulate Mongoose query with .lean() returning a Promise
         return {
-          lean: async () => arr.map(x => ({ name: x.name, stock: x.stock, category: 1 })),
-          };
-        },
-      };
-    },
-  };
-  
-    // Order model stub: capture what would be created
+          lean: async () => ({ ...p }),
+        };
+      },
+
+      findById(id) {
+        const p = plants[id];
+        return p ? { lean: async () => ({ ...p }) } : null;
+      },
+
+      // used by listLowStock in other places (include for completeness)
+      find(query) {
+        const max = query?.stock?.$lte ?? Infinity;
+        const arr = Object.values(plants).filter(x => x.stock <= max);
+        return {
+          select() {
+            return {
+              lean: async () => arr.map(x => ({
+                name: x.name,
+                stock: x.stock,
+                category: 1,
+              })),
+            };
+          },
+        };
+      },
+    };
+
+    // Order model stub: capture what would be created and support the patch step
     let createdOrder = null;
     const Order = {
       async create(doc) {
         createdOrder = { ...doc };
-        return { toObject: () => createdOrder };
-      }
+        return { toObject: () => ({ ...createdOrder }) };
+      },
+      async findByIdAndUpdate(id, patch /* , options */) {
+        // emulate the service finalizing provider/status/receiptId
+        createdOrder = { ...createdOrder, ...patch };
+        return { toObject: () => ({ _id: id, ...createdOrder }) };
+      },
     };
-
+    
     // Manager with lowStockThreshold = 5
     const manager = new InventoryManager({
       PlantModel: Plant,
       OrderModel: Order,
       lowStockThreshold: 5,
-    });
-
-    // Listen for low-stock
+    }); 
+    
+    // Listen for low-stock (resolve on first event)
     const gotLow = new Promise(resolve => {
       inventoryEvents.once('low-stock', resolve);
     });
 
-    // Act: 6 roses (8 -> 2 low), 3 lemons (7 -> 4 low too)
+    // buy: 6 roses (8 -> 2 low), 3 lemons (7 -> 4 low too)
     const order = await manager.applyOrder({
       userId: 'u1',
       items: [
@@ -77,6 +91,7 @@ const Plant = {
       ],
       deliveryFee: 0,
       shipping: null,
+      // IMPORTANT: no provider here, so payments are not invoked
     });
 
     // Assert totals
@@ -92,15 +107,18 @@ const Plant = {
     expect(createdOrder.items).to.have.length(2);
 
     // Assert low-stock event fired at least once
-    const evt = await gotLow;             // resolves when first low-stock fires
-    expect(evt).to.have.property('name'); // 'Rose' or 'Lemon'
+    const evt = await gotLow; // resolves when first low-stock fires
+    expect(evt).to.have.property('name');  // 'Rose' or 'Lemon'
     expect(evt.stock).to.be.at.most(5);
   });
 
   it('rejects when items is missing or empty', async () => {
     const Plant = { findOneAndUpdate: async () => null };
     const Order = {};
-    const manager = new InventoryManager({ PlantModel: Plant, OrderModel: Order,});
+    const manager = new InventoryManager({
+      PlantModel: Plant,
+      OrderModel: Order,
+    });
 
     try {
       await manager.applyOrder({ items: [] });
