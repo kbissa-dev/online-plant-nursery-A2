@@ -20,7 +20,7 @@ const OrderSchema = new mongoose.Schema(
     // IMPORTANT: default to 'pending' so your canCancel() shows the button
     status: { 
       type: String, 
-      enum: ['pending', 'paid', 'cancelled'], 
+      enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'], 
       default: 'pending' 
     },
 
@@ -28,14 +28,16 @@ const OrderSchema = new mongoose.Schema(
     // when null, or include null in the allowed values)
     provider:  { type: String, enum: ['stripe', 'paypal'], default: undefined },
     receiptId: { type: String, default: null },
-
-    // Shipping details
     shipping: { type: Object, default: null },
-
-    // Who placed it
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  },
-  { timestamps: true }
+    processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    shippedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    statusHistory: [{
+      status: String,
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      updatedAt: { type: Date, default: Date.now },     
+    }]
+  }, { timestamps: true }
 );
 
 // Keep total consistent if caller forgets to send it
@@ -46,7 +48,18 @@ OrderSchema.pre('save', function(next) {
   next();
 });
 
-// My orders”)
-OrderSchema.index({ createdBy: 1, createdAt: -1 });
+// order status tracking
+OrderSchema.pre('save', function(next) {
+  if (this.isModified('status') && !this.isNew) {
+    this.statusHistory.push({
+      status: this.status,
+      updatedAt: new Date()
+    });
+  } next();
+});
+
+// My orders
+OrderSchema.index({ createdBy: 1, createdAt: -1 }); // customer order management
+OrderSchema.index({ status: 1, createAt: -1 }); // staff order status management
 
 module.exports = mongoose.model('Order', OrderSchema);
