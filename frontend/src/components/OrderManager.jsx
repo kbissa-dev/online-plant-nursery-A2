@@ -28,15 +28,15 @@ export default function OrderManager() {
 
   // API helper
   async function cancelOrder(orderId) {
-    await api.put(`/api/orders/${orderId}/cancel`);
+    await api.put(`/orders/${orderId}/cancel`);
   }
 
   const load = async () => {
     setLoading(true);
     try {
       const [pRes, oRes] = await Promise.all([
-        api.get("/api/plants"),
-        api.get("/api/orders"),
+        api.get("/plants"),
+        api.get("/orders"),
       ]);
       setPlants(pRes.data);
       setOrders(oRes.data);
@@ -123,7 +123,7 @@ export default function OrderManager() {
         .filter(([, on]) => on)
         .map(([k]) => k);
 
-      const { data } = await api.post("/api/inventory/apply-order", {
+      const { data } = await api.post("/inventory/apply-order", {
         items,
         deliveryFee: Number(deliveryFee || 0),
         provider: paymentResult.provider,
@@ -160,7 +160,7 @@ export default function OrderManager() {
   const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
     try {
-      await api.delete(`/api/orders/${id}`);
+      await api.delete(`/orders/${id}`);
       setOrders((o) => o.filter((x) => x._id !== id));
       setMsg("Order deleted");
     } catch (e) {

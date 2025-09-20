@@ -20,9 +20,9 @@ const StaffDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [lowStockRes, ordersRes, plantsRes] = await Promise.all([
-        api.get('/api/inventory/low-stock'),
-        api.get('/api/orders'),
-        api.get('/api/plants')
+        api.get('/inventory/low-stock'),
+        api.get('/orders'),
+        api.get('/plants')
       ]);
 
       const orders = ordersRes.data;

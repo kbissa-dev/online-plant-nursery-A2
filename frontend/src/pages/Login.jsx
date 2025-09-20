@@ -14,7 +14,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post('/api/auth/login', formData);
+      const response = await axiosInstance.post('/auth/login', formData);
       login(response.data);
 
       switch (response.data.role) {

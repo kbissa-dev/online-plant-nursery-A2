@@ -19,7 +19,7 @@ const AdminPanel = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await api.get('/api/auth/staff');
+      const response = await api.get('/auth/staff');
       setStaff(response.data);
     } catch (error) {
       console.error('Failed to fetch staff:', error);
@@ -31,7 +31,7 @@ const AdminPanel = () => {
   const createStaff = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/api/auth/staff', newStaff);
+      const response = await api.post('/auth/staff', newStaff);
       setStaff([...staff, response.data]);
       setNewStaff({ name: '', email: '', password: '', role: 'staff', employeeId: '' });
       setShowCreateForm(false);
@@ -43,7 +43,7 @@ const AdminPanel = () => {
 
   const toggleStaffStatus = async (staffId) => {
     try {
-      const response = await api.put(`/api/auth/staff/${staffId}/toggle`);
+      const response = await api.put(`/auth/staff/${staffId}/toggle`);
       setStaff(staff.map(s => 
         s._id === staffId 
           ? { ...s, isActive: !s.isActive }

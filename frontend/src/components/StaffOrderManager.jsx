@@ -15,7 +15,7 @@ const StaffOrderManager = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get('/api/orders');
+      const response = await api.get('/orders');
       // sort by newest order first as it is usually always more relevant than older orders
       setOrders(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
@@ -39,7 +39,7 @@ const StaffOrderManager = () => {
         updateData.shippedBy = user.id;
       }
 
-      await api.put(`/api/orders/${orderId}`, updateData);
+      await api.put(`/orders/${orderId}`, updateData);
       
       setOrders(orders.map(order => 
         order._id === orderId 
