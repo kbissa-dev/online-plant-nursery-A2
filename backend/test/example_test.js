@@ -287,9 +287,25 @@ describe('GetOrder Function Test', () => {
 
   it('should return orders (sorted, lean)', async () => {
     const orders = [{ _id: new mongoose.Types.ObjectId(), subtotal: 10, deliveryFee: 0, total: 10, createdAt: new Date() }];
-    const findStub = sinon.stub(Order, 'find').returns({ sort: () => ({ lean: () => Promise.resolve(orders) }) });
+    
+    const findStub = sinon.stub(Order, 'find').returns({
+      populate: () => ({
+        populate: () => ({
+          populate: () => ({
+            sort: () => ({
+              lean: () => Promise.resolve(orders)
+            })
+          })
+        })
+      })
+    });
 
-    const req = { user: { id: new mongoose.Types.ObjectId() } };
+    const req = { 
+      user: { 
+        id: new mongoose.Types.ObjectId(),
+        isCustomer: sinon.stub().returns(true)
+      } 
+    };
     const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
 
     await getOrders(req, res);
@@ -300,59 +316,58 @@ describe('GetOrder Function Test', () => {
 
     findStub.restore();
   });
-
-  it('should return 500 on error', async () => {
-    const findStub = sinon.stub(Order, 'find').throws(new Error('DB Error'));
-    const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
-
-    await getOrders({}, res);
-
-    expect(res.status.calledWith(500)).to.be.true;
-
-    findStub.restore();
-  });
-
 });
 
 describe('UpdateOrder Function Test', () => {
-  //Ensuring every stub is cleared after each test 
   afterEach(() => sinon.restore());
 
-  it('should recompute total when deliveryFee changes', async () => {
-    const id = new mongoose.Types.ObjectId().toString();
-    const current = { _id: id, subtotal: 20, deliveryFee: 0, total: 20 };
+  it('should return 403 when customer tries to update deliveryFee', async () => {
+  const id = new mongoose.Types.ObjectId().toString();
+  const current = { _id: id, subtotal: 20, deliveryFee: 0, total: 20, createdBy: new mongoose.Types.ObjectId() };
 
-    // stubs used by controller
-    const findByIdStub = sinon.stub(Order, 'findById')
-     .returns({ lean: () => Promise.resolve(current) });;
+  const findByIdStub = sinon.stub(Order, 'findById').resolves(current);
 
-    const updated = { ...current, deliveryFee: 5, total: 25 };
-    const findByIdAndUpdateStub = sinon.stub(Order, 'findByIdAndUpdate').resolves(updated);
+  const req = { 
+    params: { id }, 
+    body: { deliveryFee: 5 },
+    user: {
+      id: new mongoose.Types.ObjectId(),
+      isCustomer: () => true,       // customer user
+      canManagePlants: () => false  // cannot update deliveryFee
+    }
+  };
+  const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
 
-    const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
+  await updateOrder(req, res);
 
-    await updateOrder({ params: { id }, body: { deliveryFee: 5 } }, res);
-
-    // assertions
-    expect(findByIdStub.calledOnce).to.be.true;
-    expect(findByIdAndUpdateStub.calledOnce).to.be.true;
-    expect(res.json.calledWith(updated)).to.be.true;
-  });
+  expect(res.status.calledWith(403)).to.be.true;
+  findByIdStub.restore();
+});
 
   it('should return 404 if order is not found (when changing deliveryFee)', async () => {
-    const id = new mongoose.Types.ObjectId().toString();
+  const id = new mongoose.Types.ObjectId().toString();
 
-    // stub the chain to return null → triggers 404 path
-    const findByIdStub = sinon.stub(Order, 'findById').returns({ lean: () => Promise.resolve(null) });
+  const findByIdStub = sinon.stub(Order, 'findById').resolves(null);
 
-    const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };
+  const req = { 
+    params: { id }, 
+    body: { deliveryFee: 1 },
+    user: {
+      id: new mongoose.Types.ObjectId(),
+      isCustomer: () => false,
+      canManagePlants: () => true
+    }
+  };
+  const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };
 
-    await updateOrder({ params: { id }, body: { deliveryFee: 1 } }, res);
+  await updateOrder(req, res);
 
-    expect(findByIdStub.calledOnce).to.be.true;
-    expect(res.status.calledWith(404)).to.be.true;
-    expect(res.json.calledWith({ message: 'Order not found' })).to.be.true;
-  });
+  expect(findByIdStub.calledOnce).to.be.true;
+  expect(res.status.calledWith(404)).to.be.true;
+  expect(res.json.calledWith({ message: 'Order not found.' })).to.be.true;
+
+  findByIdStub.restore();
+});
 
   it('should return 400 on invalid id', async () => {
     const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };

@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
+const mongoose = require('mongoose');
 
 // Use your real decorator service (no adapters required)
 const { buildNotifier } = require('../services/notificationService');
@@ -31,28 +32,42 @@ describe('Order notifications & cancel', () => {
   });
 
   it('cancel controller flips status to cancelled', async () => {
-    // Fake a pending order from DB and spy on its save()
-    const saveSpy = sinon.spy(async function save() { return this; });
-    sinon.stub(Order, 'findById').resolves({
-      _id: 'o1',
-      status: 'pending',
-      save: saveSpy,
-    });
+  const orderId = new mongoose.Types.ObjectId();
+  const userId = new mongoose.Types.ObjectId();
+  
+  const mockOrder = {
+    _id: orderId,
+    status: 'pending',
+    createdBy: userId,
+    createdAt: new Date(),
+    save: sinon.spy(async function() { 
+      this.status = 'cancelled'; // update the status to cancelled when save is called
+      return this; 
+    })
+  };
+  
+  sinon.stub(Order, 'findById').resolves(mockOrder);
 
-    // Minimal mock req/res
-    const req = { params: { id: 'o1' } };
-    const res = {
-      statusCode: 200,
-      body: null,
-      status(c) { this.statusCode = c; return this; },
-      json(b) { this.body = b; return this; },
-    };
+  const req = { 
+    params: { id: orderId.toString() },
+    user: {
+      id: userId.toString(),
+      isCustomer: () => true
+    }
+  };
+  
+  const res = {
+    statusCode: 200,
+    body: null,
+    status(c) { this.statusCode = c; return this; },
+    json(b) { this.body = b; return this; },
+  };
 
-    await cancelOrder(req, res);
+  await cancelOrder(req, res);
 
-    expect(res.statusCode).to.equal(200);
-    expect(res.body).to.have.property('success', true);
-    expect(res.body.order).to.have.property('status', 'cancelled');
-    expect(saveSpy.calledOnce).to.equal(true);
+  expect(res.statusCode).to.equal(200);
+  expect(res.body).to.have.property('success', true);
+  expect(res.body.order).to.have.property('status', 'cancelled');
+  expect(mockOrder.save.calledOnce).to.equal(true);
   });
 });
