@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../axiosConfig";
 import PaymentSelector from "../components/PaymentSelector";
+import LoyaltyBadge from "../components/LoyaltyBadge";
+import { useAuth } from "../context/AuthContext";
 
 export default function OrderManager() {
+  const { user } = useAuth();
   const [plants, setPlants] = useState([]);
   const [orders, setOrders] = useState([]);
   const [rows, setRows] = useState([{ plant: "", qty: 1 }]);
@@ -10,43 +13,42 @@ export default function OrderManager() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [provider, setProvider] = useState("stripe");
-  const [processing, setProcessing] = useState(false); //added for payment process (mock)
+  const [processing, setProcessing] = useState(false); // added for payment process (mock)
   const [channels, setChannels] = useState({ email: true, sms: false, toast: true });
- // const [notifyResult, setNotifyResult] = useState(null);
-
-
   const [processingId, setProcessingId] = useState(null);
-// Customer - Cancel order
+  // const [notifyResult, setNotifyResult] = useState(null);
+
+  // Customer - Cancel order
   const canCancel = (order) => {
     const created = new Date(order.createdAt);
     const now = new Date();
     const diffMinutes = (now - created) / (1000 * 60);
-    return order.status !== "cancelled" && diffMinutes <= 5;  //allow paid too
+    return order.status !== "cancelled" && diffMinutes <= 5; // allow paid too
   };
 
   // API helper
   async function cancelOrder(orderId) {
-    await api.put(`/api/orders/${orderId}/cancel`);
+    await api.put(`/orders/${orderId}/cancel`);
   }
 
   const load = async () => {
-  setLoading(true);
-  try {
-    const [pRes, oRes] = await Promise.all([
-      api.get("/api/plants"),
-      api.get("/api/orders"),
-    ]);
-    setPlants(pRes.data);
-    setOrders(oRes.data);
-    setMsg("");                       // clear any old “no token” text
-  } catch (e) {
-    // show something soft, but don’t block the page forever
-    const m = e?.response?.data?.message || e.message || "Failed to load data";
-    setMsg(m);
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    try {
+      const [pRes, oRes] = await Promise.all([
+        api.get("/plants"),
+        api.get("/orders"),
+      ]);
+      setPlants(pRes.data);
+      setOrders(oRes.data);
+      setMsg(""); // clear any old “no token” text
+    } catch (e) {
+      // show something soft, but don’t block the page forever
+      const m = e?.response?.data?.message || e.message || "Failed to load data";
+      setMsg(m);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -74,13 +76,13 @@ export default function OrderManager() {
     );
 
   const processPayment = async (amount, provider) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));  // simulate latency
-    
+    await new Promise(resolve => setTimeout(resolve, 1500)); // simulate latency
+
     // generate mock receipt
     const timestamp = Date.now();
     // const random = Math.floor(Math.random() * 1234);
     const receiptId = `${provider.toUpperCase()}_${timestamp}`;
-    
+
     return {
       receiptId,
       provider,
@@ -92,11 +94,11 @@ export default function OrderManager() {
 
   const createOrder = async (e) => {
     e.preventDefault();
-    
+
     // Build items array with plant details
     const items = rows
       .filter(r => r.plant && Number(r.qty) > 0)
-      .map(r => { 
+      .map(r => {
         const p = plantById[r.plant];
         return {
           plant: r.plant,
@@ -105,25 +107,23 @@ export default function OrderManager() {
           qty: Number(r.qty)
         };
       });
-    
-    if (!items.length){
+
+    if (!items.length) {
       return setMsg("Add at least one item");
     }
 
     setProcessing(true);
     setMsg("Processing payment...");
-    
+
     try {
       const paymentResult = await processPayment(total, provider);
-      
       setMsg("Payment successful. Creating order...");
 
       const chosenChannels = Object.entries(channels)
-      .filter(([, on]) => on)
-      .map(([k]) => k);
+        .filter(([, on]) => on)
+        .map(([k]) => k);
 
-      
-      const { data } = await api.post("/api/inventory/apply-order", {
+      const { data } = await api.post("/inventory/apply-order", {
         items,
         deliveryFee: Number(deliveryFee || 0),
         provider: paymentResult.provider,
@@ -134,12 +134,19 @@ export default function OrderManager() {
       console.log(`💳 [Frontend] ${provider} charged $${data?.total ?? "?"} → receipt ${paymentResult.receiptId ?? "N/A"}`);
 
       // Update UI with the server's order
-      setOrders((o) => [data, ...o]);  // After the POST succeeds
+      setOrders((o) => [data, ...o]); // After the POST succeeds
       setRows([{ plant: "", qty: 1 }]);
-      setDeliveryFee(0);  
+      setDeliveryFee(0);
       setMsg(
         `Order created successfully. Payment: ${data.provider || "N/A"} (${data.receiptId || "N/A"})`
       );
+
+      if (user?.loyaltyTier && user.loyaltyTier !== 'none') {
+        const pointsEarned = Math.floor(data.total);
+        setTimeout(() => {
+          setMsg(prev => `${prev} | 🎉 You earned ${pointsEarned} loyalty points!`);
+        }, 2000);
+      }
     } catch (e) {
       console.error("Order/Payment failed", e);
       setMsg(e?.response?.data?.message || e.message || "Order creation failed");
@@ -148,12 +155,12 @@ export default function OrderManager() {
     }
   };
 
-    // Admin- Delete order
-    const isAdmin = true; //  real auth later
-    const del = async (id) => {
+  // Admin- Delete order
+  const isAdmin = true; // real auth later
+  const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
     try {
-      await api.delete(`/api/orders/${id}`);
+      await api.delete(`/orders/${id}`);
       setOrders((o) => o.filter((x) => x._id !== id));
       setMsg("Order deleted");
     } catch (e) {
@@ -163,11 +170,21 @@ export default function OrderManager() {
 
   return (
     <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
-      <h1>Order Manager</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1>Order Manager</h1>
+        {user?.loyaltyTier && user.loyaltyTier !== 'none' && (
+          <div className="text-right">
+            <LoyaltyBadge loyaltyTier={user.loyaltyTier} size="sm" showDiscount={true} />
+            <div className="text-sm text-gray-600 mt-1">
+              Active discount applied to eligible items
+            </div>
+          </div>
+        )}
+      </div>
       {msg && (
-        <div style={{ 
-          background: msg.includes("success") ? "#e3f0e3" : "#f8f9ff", 
-          border: `1px solid ${msg.includes("success") ? "#4caf50" : "#e6e8ff"}`, 
+        <div style={{
+          background: msg.includes("success") ? "#e3f0e3" : "#f8f9ff",
+          border: `1px solid ${msg.includes("success") ? "#4caf50" : "#e6e8ff"}`,
           padding: 8,
           color: msg.includes("failed") || msg.includes("error") ? "#d32f2f" : "inherit"
         }}>
@@ -233,33 +250,33 @@ export default function OrderManager() {
             <strong>Total: ${total.toFixed(2)}</strong>
           </div>
         </div>
-        
+
         <PaymentSelector value={provider} onChange={setProvider} />
-        
+
         <div style={{ marginTop: 8 }}>
           <strong>Notify me via:</strong>{" "}
           <label>
             <input
-            type="checkbox"
-            checked={channels.email}
-            onChange={e => setChannels(x => ({ ...x, email: e.target.checked }))}
+              type="checkbox"
+              checked={channels.email}
+              onChange={e => setChannels(x => ({ ...x, email: e.target.checked }))}
             />{" "}
             Email</label>{" "}
-            <label>
-              <input
+          <label>
+            <input
               type="checkbox"
               checked={channels.sms}
               onChange={e => setChannels(x => ({ ...x, sms: e.target.checked }))}
-              />{" "}
-              SMS</label>{" "}
-              <label>
-                <input
-                type="checkbox"
-                checked={channels.toast}
-                onChange={e => setChannels(x => ({ ...x, toast: e.target.checked }))}
-                />{" "}
-                Toast</label>
-                </div>
+            />{" "}
+            SMS</label>{" "}
+          <label>
+            <input
+              type="checkbox"
+              checked={channels.toast}
+              onChange={e => setChannels(x => ({ ...x, toast: e.target.checked }))}
+            />{" "}
+            Toast</label>
+        </div>
 
         <button type="submit" disabled={processing}>
           {processing ? "Processing Payment..." : "Create Order"}
@@ -286,96 +303,97 @@ export default function OrderManager() {
               <th style={{ textAlign: "center", padding: "4px" }}>Actions</th>
             </tr>
           </thead>
-          <tbody> 
+          <tbody>
             {orders.map((o) => {
               const id = o._id;
               return (
-              <tr key={id}>
-                <td style={{ padding: "4px" }}>
-                  {new Date(o.createdAt).toLocaleString()}
+                <tr key={id}>
+                  <td style={{ padding: "4px" }}>
+                    {new Date(o.createdAt).toLocaleString()}
                   </td>
                   <td style={{ padding: "4px" }}>
                     {o.items?.map((it, idx) => (
                       <div key={idx}>
                         {it.name} × {it.qty} @ ${Number(it.price).toFixed(2)}
-                        </div>
-                      ))}
-                      </td>
-                      <td style={{ textAlign: "right", padding: "4px" }}>
-                        ${Number(o.subtotal).toFixed(2)}
-                        </td>
-                        <td style={{ textAlign: "right", padding: "4px" }}>
-                          ${Number(o.deliveryFee).toFixed(2)}
-                          </td>
-                          <td style={{ textAlign: "right", padding: "4px" }}>
-                            ${Number(o.total).toFixed(2)}
-                            </td>
-                            <td style={{ padding: "4px" }}>{o.status}</td>
-                            <td style={{ padding: "4px" }}>
-                              {o.provider ? `${o.provider} (${o.receiptId || "-"})` : "-"}
-                              </td>
-                              <td align="center">
-                                 {/* Cancel (customer) */}
-                                 {canCancel(o) && (
-                                  <button
-                                  disabled={processingId === id}
-                                  onClick={async () => {
-                                    setProcessingId(id);
-                                    try {
-                                      await cancelOrder(id); // call API
-                                    setMsg("Success: Order cancelled!");
-                                    setOrders((prev) =>
-                                      prev.map((ord) =>
-                                        ord._id === id ? { ...ord, status: "cancelled" } : ord)
-                                  );} catch (err) {
-                                    setMsg("Error: Cancel failed");
-                                  } finally {
-                                    setProcessingId(null);
-                                  }
-                                }}
-                                style={
-                                  processingId === id
-                                  ? { opacity: 0.6, cursor: "not-allowed" }
-                                  : undefined
-                                }
-                                >
-                                  {processingId === id ? "Cancelling..." : "Cancel"}
-                                  </button>
-                                )}
-                                {/* Delete (admin) */}
-                                {isAdmin && (
-                                  <button
-                                  disabled={processingId === id}
-                                  onClick={async () => {
-                                    if (!window.confirm("Delete this order?")) return;
-                                    setProcessingId(id);
-                                    try {
-                                      await del(id);
-                                      setOrders((list) => list.filter((x) => x._id !== id));
-                                      setMsg("Order deleted");
-                                    } catch (e) {
-                                      setMsg(e?.response?.data?.message || "Delete failed");
-                                    } finally {
-                                      setProcessingId(null);
-                                    }
-                                  }}
-                                  style={{
-                                    marginLeft: 8,
-                                    ...(processingId === id
-                                      ? { opacity: 0.6, cursor: "not-allowed" }
-                                      : {}),
-                                    }}
-                                    >
-                                      {processingId === id ? "Deleting..." : "Delete"}
-                                      </button>
-                                    )}
-                                    </td>
-                                    </tr>
-                                  );
-                               })}
-                            </tbody>
-                          </table>
-                        )}
-                    </div>
-                  );
-             }
+                      </div>
+                    ))}
+                  </td>
+                  <td style={{ textAlign: "right", padding: "4px" }}>
+                    ${Number(o.subtotal).toFixed(2)}
+                  </td>
+                  <td style={{ textAlign: "right", padding: "4px" }}>
+                    ${Number(o.deliveryFee).toFixed(2)}
+                  </td>
+                  <td style={{ textAlign: "right", padding: "4px" }}>
+                    ${Number(o.total).toFixed(2)}
+                  </td>
+                  <td style={{ padding: "4px" }}>{o.status}</td>
+                  <td style={{ padding: "4px" }}>
+                    {o.provider ? `${o.provider} (${o.receiptId || "-"})` : "-"}
+                  </td>
+                  <td align="center">
+                    {/* Cancel (customer) */}
+                    {canCancel(o) && (
+                      <button
+                        disabled={processingId === id}
+                        onClick={async () => {
+                          setProcessingId(id);
+                          try {
+                            await cancelOrder(id); // call API
+                            setMsg("Success: Order cancelled!");
+                            setOrders((prev) =>
+                              prev.map((ord) =>
+                                ord._id === id ? { ...ord, status: "cancelled" } : ord)
+                            );
+                          } catch (err) {
+                            setMsg("Error: Cancel failed");
+                          } finally {
+                            setProcessingId(null);
+                          }
+                        }}
+                        style={
+                          processingId === id
+                            ? { opacity: 0.6, cursor: "not-allowed" }
+                            : undefined
+                        }
+                      >
+                        {processingId === id ? "Cancelling..." : "Cancel"}
+                      </button>
+                    )}
+                    {/* Delete (admin) */}
+                    {isAdmin && (
+                      <button
+                        disabled={processingId === id}
+                        onClick={async () => {
+                          if (!window.confirm("Delete this order?")) return;
+                          setProcessingId(id);
+                          try {
+                            await del(id);
+                            setOrders((list) => list.filter((x) => x._id !== id));
+                            setMsg("Order deleted");
+                          } catch (e) {
+                            setMsg(e?.response?.data?.message || "Delete failed");
+                          } finally {
+                            setProcessingId(null);
+                          }
+                        }}
+                        style={{
+                          marginLeft: 8,
+                          ...(processingId === id
+                            ? { opacity: 0.6, cursor: "not-allowed" }
+                            : {}),
+                        }}
+                      >
+                        {processingId === id ? "Deleting..." : "Delete"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}

@@ -3,6 +3,7 @@
 A full-stack MERN web application for an online plant nursery store.
 It is built as a part of IFN636 Software Lifecycle Management coursework.
 
+
 ## Live Application
 
 **Public URL**: [http://ec2-15-134-76-47.ap-southeast-2.compute.amazonaws.com/]
@@ -10,12 +11,17 @@ It is built as a part of IFN636 Software Lifecycle Management coursework.
 ## Local URLs
 
 **Frontend**: [http://localhost:3000]
+
 **Backend**: [http://localhost:5001] for API testing
 
 ## Demo Credentials
 
 New credentials can be created by using "Register" button on the top right corner of the webpage or existing credentials are as follow:
-- **Staff (Green Plant Nursery Staff)**:
+**Admin (Green Plant Nursery Admin)**:
+  - Email: `admin@green.com`
+  - Password: `admin123`
+
+**Staff (Green Plant Nursery Staff)**:
   - Email: `staff@email.com`
   - Password: `StaffPass123`
 

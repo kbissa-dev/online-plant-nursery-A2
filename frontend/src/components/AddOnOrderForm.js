@@ -7,7 +7,7 @@ export default function OrderForm({ cartItems }) {
 
   const handleSubmit = async () => {
     try {
-      const { data } = await api.post("/api/orders", {
+      const { data } = await api.post("/orders", {
         items: cartItems,
         giftWrap,
         warranty

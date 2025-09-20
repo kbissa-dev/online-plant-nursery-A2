@@ -11,7 +11,7 @@ export default function PlantsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/plants");
+      const { data } = await api.get("/plants");
       setPlants(data || []);
       setError("");
     } catch (e) {
@@ -26,7 +26,7 @@ export default function PlantsPage() {
   const buyOne = async (p) => {
     try {
       // When the cart endpoint is available, replace the alert with:
-      // await api.post("/api/cart", { plantId: p._id, qty: 1 });
+      // await api.post("/cart", { plantId: p._id, qty: 1 });
       alert(`(Demo) Added 1 x ${p.name} to cart`);
     } catch (e) {
       alert(e?.response?.data?.message || "Add to cart failed");

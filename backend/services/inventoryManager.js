@@ -1,16 +1,80 @@
-// backend/services/inventoryManager.js
 const EventEmitter = require('events');
 const { StripeAdapter, PaypalAdapter } = require('../payments/paymentAdapter');
-
 
 class InventoryEvents extends EventEmitter {}
 const inventoryEvents = new InventoryEvents();
 
 class InventoryManager {
-  constructor({ PlantModel, OrderModel, lowStockThreshold = 5 }) {
+  constructor({ PlantModel, OrderModel, UserModel, lowStockThreshold = 5 }) {
     this.Plant = PlantModel;
     this.Order = OrderModel;
+    this.User = UserModel;
     this.lowStockThreshold = lowStockThreshold;
+  }
+
+  async applyOrder({ userId, items = [], deliveryFee = 0, shipping = null, provider = 'stripe', channels = ['toast'] }) {
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error('Order must have at least one item');
+    }
+
+    // check and reduce stock
+    for (const it of items) {
+      const updated = await this.adjustStock(it.plant, -it.qty);
+      if (!updated) throw new Error(`Insufficient stock for plant ${it.plant}`);
+    }
+
+    // subtotal + total
+    const subtotal = items.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
+    const total = subtotal + (Number(deliveryFee) || 0);
+
+    // Payment Service (Adapter pattern) - Charging the Provider
+    const payment = provider === 'paypal' ? new PaypalAdapter() : new StripeAdapter();
+    const receipt = await payment.charge(total, { userId });
+     
+    const order = await this.Order.create({
+      items,
+      subtotal,
+      deliveryFee,
+      total,
+      status: 'pending',
+      provider, // such as stripe and paypal
+      receiptId: receipt.id,
+      shipping,
+      createdBy: userId || null,
+    });
+
+    await this.Order.findByIdAndUpdate(order._id, {
+      status: 'paid',
+      provider,
+      receiptId: receipt.id,
+    });
+
+    // update user loyalty status after successful order
+    if (userId && this.User) {
+      try {
+        const user = await this.User.findById(userId);
+        if (user) {
+          const loyaltyUpdate = user.addPurchase(total);
+          await user.save();
+          
+          // log loyalty changes for notifications
+          if (loyaltyUpdate.tierChanged) {
+            console.log(`User ${userId} upgraded to ${loyaltyUpdate.newTier} tier!`);
+          }
+          console.log(`User earned ${loyaltyUpdate.pointsEarned} loyalty points`);
+        }
+      } catch (error) {
+        console.error('Failed to update user loyalty status:', error);
+      }
+    }
+
+    // Notification Service (decorator pattern) - Send notification
+    const { buildNotifier } = require("./notificationService");
+    const notifier = buildNotifier(channels);
+    notifier.send(`Order ${order._id} placed successfully!`);
+
+    console.log("💳", provider, "charging", total, "→ receipt", receipt.id);
+    return order.toObject();
   }
 
   _emitLowStockIfNeeded(doc) {
@@ -25,7 +89,6 @@ class InventoryManager {
     }
   }
 
-  // ---- Stock operations ----
   async adjustStock(plantId, delta) {
     delta = Number(delta || 0);
     const guard = delta < 0 ? { stock: { $gte: -delta } } : {};
@@ -51,56 +114,6 @@ class InventoryManager {
       .select({ name: 1, stock: 1, category: 1 })
       .lean();
   }
-
-  // ---- Orders that also reduce stock ----
- async applyOrder({ userId, items = [], deliveryFee = 0, shipping = null, provider = 'stripe', channels = ['toast'] }) {
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('Order must have at least one item');
-  }
-
-  // Check & decrement stock
-  for (const it of items) {
-    const updated = await this.adjustStock(it.plant, -it.qty);
-    if (!updated) throw new Error(`Insufficient stock for plant ${it.plant}`);
-  }
-
-  // subtotal + total
-  const subtotal = items.reduce((s, i) => s + Number(i.price) * Number(i.qty),0);
-  const total = subtotal + (Number(deliveryFee) || 0);
-
-  // Payment Service (Adapter pattern)- Charging the Provider
-   const payment = provider === 'paypal' ? new PaypalAdapter() : new StripeAdapter();
-   const receipt = await payment.charge(total, { userId });
-   
-  // Create Order document
-  const order = await this.Order.create({
-    items,
-    subtotal,
-    deliveryFee,
-    total,
-    status: 'pending',
-    provider,          // 'stripe' or 'paypal'
-    receiptId: receipt.id, // receiptID field
-    shipping,
-    createdBy: userId || null,
-  });
-
-   
-   // Marking order as Paid and attached payment data
-    await this.Order.findByIdAndUpdate(order._id, {
-      status: 'paid',
-      provider,
-      receiptId: receipt.id,
-    });
-
-  // Notification Service (decorator pattern)- Send notification
-  const { buildNotifier } = require("./notificationService");
-  const notifier = buildNotifier(["email", "sms", "toast"]);
-  notifier.send(`Order ${order._id} placed successfully!`);
-
-  console.log("💳", provider, "charging", total, "→ receipt", receipt.id);
-  return order.toObject();
-}
 }
 
 module.exports = {
