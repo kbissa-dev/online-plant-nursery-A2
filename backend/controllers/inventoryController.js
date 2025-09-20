@@ -1,11 +1,12 @@
-// backend/controllers/inventoryController.js
 const { InventoryManager } = require('../services/inventoryManager');
 const Plant = require('../models/Plant');
 const Order = require('../models/Order');
+const User = require('../models/User');
 
 const manager = new InventoryManager({
   PlantModel: Plant,
   OrderModel: Order,
+  UserModel: User,
   lowStockThreshold: 5,
 });
 

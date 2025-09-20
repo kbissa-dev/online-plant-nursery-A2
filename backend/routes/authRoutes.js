@@ -23,4 +23,7 @@ router.put('/staff/:staffId/toggle', protect, requireAdmin, toggleStaffStatus);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateUserProfile);
 
+router.get('/loyalty', protect, getLoyaltyStatus);
+router.put('/admin/users/:userId/loyalty', protect, updateUserLoyaltyTier);
+
 module.exports = router;

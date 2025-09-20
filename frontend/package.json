@@ -1,5 +1,5 @@
 {
-  "name": "task-manager-frontend",
+  "name": "online-plant-nursery-frontend",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -8,7 +8,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.10.0",
     "react-scripts": "5.0.1",
-    "task-manager": "file:..",
+    "online-plant-nursery": "file:..",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

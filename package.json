@@ -1,7 +1,7 @@
 {
-  "name": "task-manager",
+  "name": "online-plant-nursery",
   "version": "1.0.0",
-  "description": "Complete MERN Task Manager Application",
+  "description": "Complete MERN Web Application",
   "scripts": {
     "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "start": "concurrently \"npm run prod --prefix backend\" \"npm start --prefix frontend\"",
@@ -13,6 +13,6 @@
     "mocha": "^11.7.2",
     "sinon": "^21.0.0"
   },
-  "author": "Task Manager Team",
+  "author": "online-plant-nursery Team",
   "license": "ISC"
 }

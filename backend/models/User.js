@@ -114,12 +114,12 @@ userSchema.methods.getLoyaltyInfo = function() {
     'platinum': { name: 'Platinum', discount: 15, nextTier: null, nextThreshold: null }
   };
 
-  const currentTier = this.tiers[loyaltyTier];
+  const currentTier = tiers[this.loyaltyTier];
   const progressToNext = currentTier.nextThreshold ? Math.min(100, (this.totalSpent / currentTier.nextThreshold) * 100) : 100;
 
   return {
     currentTier: currentTier.name,
-    discount: currentTier,discount,
+    discount: currentTier.discount,
     totalSpent: this.totalSpent,
     loyaltyPoints: this.loyaltyPoints,
     nextTier: currentTier.nextTier,

@@ -5,7 +5,6 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
-
 const app = express();
 
 app.use(cors());
@@ -20,8 +19,6 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/plants', require('./routes/plantRoutes')); // Plants CRUD
 app.use('/api/orders', require('./routes/orderRoutes')); // Orders CRUD
-// app.use('/api', require('./routes/inventoryRoutes'));
-
 
 // InventoryManager routes
 app.use('/api/inventory', require('./routes/inventoryRoutes')); 

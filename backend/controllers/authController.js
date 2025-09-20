@@ -44,7 +44,7 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
-        if (user && (await bcrypt.compare(password, user.password))) {          
+        if (!user || !(await bcrypt.compare(password, user.password))) {          
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
@@ -62,7 +62,8 @@ const loginUser = async (req, res) => {
             token: generateToken(user.id)
         };
 
-        if (user.isCustomer) {
+        if (user.isCustomer()) {
+            response.address = user.address;
             response.loyaltyTier = user.loyaltyTier;
             response.loyaltyInfo = user.getLoyaltyInfo();
         }
@@ -145,7 +146,7 @@ const toggleStaffStatus = async (req, res) => {
             return res.status(404).json({ message: 'Staff member not found.' });
         }
 
-        staff.isActive = !staff.inActive;
+        staff.isActive = !staff.isActive;
         await staff.save();
 
         res.json({
@@ -206,7 +207,7 @@ const updateUserProfile = async (req, res) => {
         const updatedUser = await user.save();
 
         const response = {
-            id: updateUserProfile.id,
+            id: updatedUser.id,
             name: updatedUser.name,
             email: updatedUser.email,
             role: updatedUser.role,
@@ -217,7 +218,6 @@ const updateUserProfile = async (req, res) => {
             response.address = updatedUser.address;
             response.loyaltyTier = updatedUser.loyaltyTier;
             response.loyaltyInfo = updatedUser.getLoyaltyInfo();
-            response.loy
         }
 
         res.json(response);
