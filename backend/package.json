@@ -1,9 +1,10 @@
 {
-  "name": "task-manager-backend",
+  "name": "online-plant-nursery-backend",
   "version": "1.0.0",
-  "description": "Backend for Task Manager App",
+  "description": "Backend for online-plant-nursery App",
   "main": "server.js",
   "scripts": {
+    "create:admin": "node scripts/createAdmin.js",
     "test": "mocha --exit --timeout 8000",
     "start": "node server.js",
     "dev": "nodemon server.js",
@@ -19,7 +20,7 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.14",
     "request": "^2.88.2",
-    "task-manager": "file:.."
+    "online-plant-nursery": "file:.."
   },
   "devDependencies": {
     "esm": "^3.2.25",
@@ -27,6 +28,6 @@
     "nodemon": "^2.0.15",
     "sinon": "^19.0.5"
   },
-  "author": "Task Manager Team",
+  "author": "online-plant-nursery Team",
   "license": "ISC"
 }

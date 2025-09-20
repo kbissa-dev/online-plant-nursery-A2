@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const c = require('../controllers/plantController');
-// const auth = require('../middleware/auth'); // enable later if needed
-// router.use(auth);
-router.get('/', c.getPlants);
-router.post('/', c.addPlant);
-router.put('/:id', c.updatePlant);
-router.delete('/:id', c.deletePlant);
+const { protect } = require('../middleware/authMiddleware');
+const { requireStaff, requireStaffOrCustomer } = require('../middleware/roleMiddleware');
+
+// public read access for customers and staff management for plant CRUD
+router.get('/', protect, requireStaffOrCustomer, c.getPlants);
+router.post('/', protect, requireStaff, c.addPlant);
+router.put('/:id', protect, requireStaff, c.updatePlant);
+router.delete('/:id', protect, requireStaff, c.deletePlant);
+
 module.exports = router;
