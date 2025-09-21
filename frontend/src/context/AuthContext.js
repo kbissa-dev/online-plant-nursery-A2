@@ -6,6 +6,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   const login = (userData) => {
+    if (userData.token) {
+      localStorage.setItem('authToken', userData.token);
+    }
+
     setUser({
       ...userData,
       role: userData.role || 'customer',
@@ -17,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    localStorage.removeItem('authToken');
     setUser(null);
   };
 
