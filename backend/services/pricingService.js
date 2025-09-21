@@ -22,15 +22,15 @@ class PricingService {
         for (const strategy of strategies) {
             try {
                 const result = await strategy.calculateInCents(cart, user);
-                if (result.amountCents > 0) {
+                if (result.amountInCents > 0) {
                     discountResults.push({
                         name: strategy.name,
-                        amountCents: result.amountCents,
-                        amount: this.centsToDollars(result.amountCents),
+                        amountInCents: result.amountInCents,
+                        amount: this.centsToDollars(result.amountInCents),
                         description: result.description,
                         ...result
                     });
-                    totalDiscountInCents += result.amountCents;
+                    totalDiscountInCents += result.amountInCents;
                 }
             } catch (error) {
                 console.error(`Error applying ${strategy.name}:`, error);
@@ -48,6 +48,9 @@ class PricingService {
             totalDiscount: this.centsToDollars(totalDiscountInCents),
             total: this.centsToDollars(totalInCents)
         };
+    } catch (error) {
+        console.error('PricingService.calculateTotals error:', error);
+        throw new Error (`Pricing calculation failed: ${error.message}`);
     }
 
     static dollarsToCents(dollars) {
@@ -58,7 +61,7 @@ class PricingService {
         return (cents / 100).toFixed(2);
     }
 
-    static getSubtotalinCents(cart) {
+    static getSubtotalInCents(cart) {
         return cart.items.reduce((total, item) => total + (this.dollarsToCents(item.plant.price) * item.qty), 0);
     }
 }
