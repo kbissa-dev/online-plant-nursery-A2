@@ -33,7 +33,7 @@ class BulkDiscount extends DiscountStrategy {
         for (const item of cart.items) {
             const itemPriceInCents = PricingService.dollarsToCents(item.plant.price);
             const itemSubtotalInCents = itemPriceInCents * item.qty;
-            const itemDiscountInCents = Math.round(itemSubtotalInCents * discountTier.discount / 100);
+            const itemDiscountInCents = Math.floor(itemSubtotalInCents * discountTier.discount / 100);
             totalDiscountInCents += itemDiscountInCents;
         }
 
