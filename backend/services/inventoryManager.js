@@ -54,7 +54,7 @@ class InventoryManager {
       try {
         const user = await this.User.findById(userId);
         if (user) {
-          const loyaltyUpdate = user.addPurchase(total);
+          const loyaltyUpdate = user.addPurchase(total, total);
           await user.save();
           
           // log loyalty changes for notifications
