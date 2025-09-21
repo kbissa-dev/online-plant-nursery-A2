@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema({
       default: 'green'
     },
     totalSpent: { type: Number, default: 0, min: 0 },
+    loyaltyCredit: { type: Number, default: 0, min: 0 }, // for adding discounts given for loyalty tier calculation - higher tier gets higher discounts ends up getting less point if not factored here
     loyaltyPoints: { type: Number, default: 0, min: 0 },
 
     // employee fields
@@ -75,12 +76,13 @@ userSchema.methods.updateLoyaltyTier = function() {
   if (!this.isCustomer()) return false;
 
   const previousTier = this.loyaltyTier;
+  const loyaltyEligibleAmount = this.totalSpent + this.loyaltyCredit;
 
-  if (this.totalSpent >= 1000) {
+  if (loyaltyEligibleAmount >= 1000) {
     this.loyaltyTier = 'platinum';
-  } else if (this.totalSpent >= 500) {
+  } else if (loyaltyEligibleAmount >= 500) {
     this.loyaltyTier = 'gold';
-  } else if (this.totalSpent >= 100) {
+  } else if (loyaltyEligibleAmount >= 100) {
     this.loyaltyTier = 'silver';
   } else {
     this.loyaltyTier = 'green';
@@ -93,8 +95,11 @@ userSchema.methods.updateLoyaltyTier = function() {
 userSchema.methods.addPurchase = function(orderTotal, originalOrderTotal) {
   if (!this.isCustomer()) return null;
 
+  const originalAmount = originalOrderTotal || orderTotal;
+
   this.totalSpent += orderTotal;
-  this.loyaltyPoints += Math.floor(originalOrderTotal);
+  this.loyaltyCredit += (originalAmount - orderTotal);
+  this.loyaltyPoints += Math.floor(originalAmount);
   const tierChanged = this.updateLoyaltyTier();
 
   return {
@@ -115,7 +120,8 @@ userSchema.methods.getLoyaltyInfo = function() {
   };
 
   const currentTier = tiers[this.loyaltyTier];
-  const progressToNext = currentTier.nextThreshold ? Math.min(100, (this.totalSpent / currentTier.nextThreshold) * 100) : 100;
+  const loyaltyEligibleAmount = this.totalSpent + this.loyaltyCredit;
+  const progressToNext = currentTier.nextThreshold ? Math.min(100, (loyaltyEligibleAmount / currentTier.nextThreshold) * 100) : 100;
 
   return {
     currentTier: currentTier.name,
