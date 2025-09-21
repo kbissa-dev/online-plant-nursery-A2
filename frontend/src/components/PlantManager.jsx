@@ -13,7 +13,7 @@ export default function PlantManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("api/plants");
+      const { data } = await api.get("/plants");
       setPlants(data);
       setMsg("");
     } catch (e) {
@@ -31,11 +31,11 @@ export default function PlantManager() {
     try {
       const payload = { ...form, price: Number(form.price), stock: Number(form.stock) };
       if (editingId) {
-        const { data } = await api.put(`api/plants/${editingId}`, payload);
+        const { data } = await api.put(`/plants/${editingId}`, payload);
         setPlants((xs) => xs.map((x) => (x._id === editingId ? data : x)));
         setMsg("Plant updated");
       } else {
-        const { data } = await api.post("api/plants", payload);
+        const { data } = await api.post("/plants", payload);
         setPlants((xs) => [data, ...xs]);
         setMsg("Plant added");
       }
@@ -53,7 +53,7 @@ export default function PlantManager() {
 
   const del = async (id) => {
     if (!window.confirm("Delete this plant?")) return;
-    try { await api.delete(`api/plants/${id}`); setPlants((xs) => xs.filter((x) => x._id !== id)); setMsg("Plant deleted"); }
+    try { await api.delete(`/plants/${id}`); setPlants((xs) => xs.filter((x) => x._id !== id)); setMsg("Plant deleted"); }
     catch (e) { setMsg(e?.response?.data?.message || "Delete failed"); }
   };
 
