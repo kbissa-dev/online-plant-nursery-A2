@@ -8,7 +8,7 @@ const requireCustomer = (req, res, next) => {
 };
 
 const requireStaff = (req, res, next) => {
-    if (!req.user || (!req.user.isStaff() && req.user.isAdmin())) {
+    if (!req.user || !(req.user.isStaff() || req.user.isAdmin())) {
         return res.status(403).json({ message: 'Staff level access required.' });
     }
 

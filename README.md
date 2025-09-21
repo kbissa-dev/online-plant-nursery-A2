@@ -16,7 +16,8 @@ It is built as a part of IFN636 Software Lifecycle Management coursework.
 
 ## Demo Credentials
 
-New credentials can be created by using "Register" button on the top right corner of the webpage or existing credentials are as follow:
+New credentials for customers can be created by using "Register" button on the top right corner of the webpage or existing credentials are as follow:
+
 **Admin (Green Plant Nursery Admin)**:
   - Email: `admin@green.com`
   - Password: `admin123`
