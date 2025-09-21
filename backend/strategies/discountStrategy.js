@@ -31,7 +31,7 @@ class DiscountStrategy {
 
     getSubtotalInCents(cart) {
         return cart.items.reduce((total, item) => {
-            const priceInCents = Math.round(parseFloat(item.plant.price) * 100);
+            const priceInCents = PricingService.dollarsToCents(item.plant.price);
             return total + (priceInCents * item.qty);
         }, 0);
     }
