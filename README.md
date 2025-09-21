@@ -16,7 +16,7 @@ It is built as a part of IFN636 Software Lifecycle Management coursework.
 
 ## Demo Credentials
 
-New credentials for customers can be created by using "Register" button on the top right corner of the webpage or existing credentials are as follow:
+New credentials for customers can be created by using "Register" button on the top right corner of the webpage or existing credentials* are as follow:
 
 **Admin (Green Plant Nursery Admin)**:
   - Email: `admin@green.com`
@@ -26,9 +26,11 @@ New credentials for customers can be created by using "Register" button on the t
   - Email: `staff@email.com`
   - Password: `StaffPass123`
 
-- **Customers (Registered Users)**:
+**Customers (Registered Users)**:
   - Email: `customer@email.com`
   - Password: `CustomerPass123`
+
+*If setting up for the first time, refer to Database Setup and Seeding to create Admin credentials.
 
 ## System Overview
 
@@ -100,7 +102,34 @@ npm run dev
 
 The backend server will run on `http://localhost:5001`
 
-### 3. Frontend Setup
+### 3. Database Setup and Seeding
+
+Update your `.env` file with your MongoDB Atlas connection string and then run the setup scripts:
+
+```bash
+# Create admin account (run this first)
+npm run create:admin
+
+# Seed the database with initial plant data
+node seed/seedPlants.js
+```
+
+#### Important Notes:
+
+- `createAdmin.js` creates the admin account with email: `admin@green.com` and password: `admin123`
+- `seedPlants.js` populates the database with 12 initial plants from `auPlants.json`
+- Only run these scripts during initial setup or when you want to reset your database.
+- **Warning**: `seedPlants.js` will delete all existing plants before inserting seed data.
+
+### 4. Start Backend Server
+
+```bash
+npm run dev
+```
+
+The backend server will run on `http://localhost:5001`
+
+### 5. Frontend Setup
 
 ```bash
 # Navigate to frontend directory (open new terminal)
@@ -113,15 +142,12 @@ npm start
 
 The frontend will run on `http://localhost:3000`
 
-### 4. Database Setup
-
-Update your `.env` file with your MongoDB Atlas connection string.
-
 ## Available Scripts
 
 ### Frontend Scripts
 
 In the `frontend` directory:
+
 #### `npm start`
 
 Runs the React app in development mode on [http://localhost:3000](http://localhost:3000).
@@ -129,10 +155,18 @@ Runs the React app in development mode on [http://localhost:3000](http://localho
 ### Backend Scripts
 
 In the `backend` directory:
+
 #### `npm run dev`
+
 Starts the backend server with nodemon for development.
+
 #### `npm test`
+
 Runs backend tests.
+
+`npm run create:admin`
+
+Creates the admin user account.
 
 ## CI/CD Pipeline
 
