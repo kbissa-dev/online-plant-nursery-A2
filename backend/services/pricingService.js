@@ -48,6 +48,7 @@ class PricingService {
             totalDiscount: this.centsToDollars(totalDiscountInCents),
             total: this.centsToDollars(totalInCents)
         };
+        
     } catch (error) {
         console.error('PricingService.calculateTotals error:', error);
         throw new Error (`Pricing calculation failed: ${error.message}`);
