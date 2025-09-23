@@ -91,9 +91,19 @@ class InventoryManager {
 
   async adjustStock(plantId, delta) {
     delta = Number(delta || 0);
-    const guard = delta < 0 ? { stock: { $gte: -delta } } : {};
+    let query = {_id: plantId };
+    if (delta < 0) {
+      // require resulting stock > lowStockThreshold
+      // i.e., stock + delta >= lowStockThreshold + 1
+      query = {
+        ...query,
+        stock: { $gte: (-delta) + (this.lowStockThreshold + 1) }
+      };
+    }
+    // const guard = delta < 0 ? { stock: { $gte: -delta } } : {};
     const updated = await this.Plant.findOneAndUpdate(
-      { _id: plantId, ...guard },
+      //{ _id: plantId, ...guard },
+      query,
       { $inc: { stock: delta } },
       { new: true }
     ).lean();
