@@ -56,7 +56,13 @@ export default function OrderManager() {
 
   const plantById = useMemo(
     () => Object.fromEntries(plants.map((p) => [p._id, p])),
-    [plants]
+    [plants] // dependency array
+  );
+
+  // Which plants are low
+  const lowStockPlants = useMemo(
+    () => plants.filter((p) => p?.isLowStock === true || Number(p?.stock) <= 5),
+    [plants]  // dependency array
   );
 
   const subtotal = rows.reduce(
@@ -96,7 +102,8 @@ export default function OrderManager() {
     e.preventDefault();
 
     // Build items array with plant details
-    const items = rows
+    // UX guard: block orders that would drop stock to <= 5
+   const items = rows
       .filter(r => r.plant && Number(r.qty) > 0)
       .map(r => {
         const p = plantById[r.plant];
@@ -106,10 +113,18 @@ export default function OrderManager() {
           price: Number(p?.price ?? 0),
           qty: Number(r.qty)
         };
-      });
+      }); 
 
-    if (!items.length) {
+      if (!items.length) {
       return setMsg("Add at least one item");
+    }
+
+    const offenders = items.filter(it => {
+      const p = plantById[it.plant];
+      return p && (Number(p.stock) - Number(it.qty)) <=5;
+    });
+    if (offenders.length) {
+      return setMsg('Insufficient stock: ${offenders.map(o => o.name).join(', ')}');
     }
 
     setProcessing(true);
@@ -156,7 +171,9 @@ export default function OrderManager() {
   };
 
   // Admin- Delete order
-  const isAdmin = true; // real auth later
+  // const isAdmin = true; real auth later
+  const isAdmin = user?.role === 'admin' || user?.role === 'staff';
+  const isCustomer = user?.role === 'customer';
   const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
     try {
@@ -194,6 +211,21 @@ export default function OrderManager() {
 
       <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
         <h3>Create Order</h3>
+
+        {/*Show low-stock warning*/}
+        {lowStockPlants.length > 0 && (
+          <div role="alert" style={{
+            marginBottom: 8,
+            padding: 8,
+            background: '#FFF7E6',
+            border: '1px solod #FFFE0B3',
+            borderRadius: 6
+          }}>
+            {lowStockPlants.length} item{lowStockPlants.length > 1 ? 's' : ''} low on stock:&nbsp;
+            {lowStockPlants.slice(0, 4).map(p => `${p.name} (${p.stock} left)`).join(', ')}
+            {lowStockPlants.length > 4 ? '...' : ''}
+          </div>
+        )}
         {rows.map((r, i) => (
           <div
             key={i}
@@ -205,11 +237,19 @@ export default function OrderManager() {
               required
             >
               <option value="">Select plant…</option>
-              {plants.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} — ${Number(p.price).toFixed(2)}
-                </option>
-              ))}
+              {plants.map((p) => {
+                const low = (p.isLowStock === true) || (Number(p.stock) <= 5);
+                return (
+                  <option
+                    key={p._id}
+                    value={p._id}
+                    disabled={low}
+                    title={low ? `Low stock: ${p.stock} left` : ''}
+                    aria-disabled={low}>
+                    {p.name} - ${Number(p.price).toFixed(2)} {low ? `(Low stock - ${p.stock} left)` : ''}
+                  </option>
+                );
+              })}
             </select>
             <input
               type="number"
@@ -333,7 +373,7 @@ export default function OrderManager() {
                   </td>
                   <td align="center">
                     {/* Cancel (customer) */}
-                    {canCancel(o) && (
+                    {isCustomer && (['pending', 'paid'].includes(o.status)) && canCancel(o) && (
                       <button
                         disabled={processingId === id}
                         onClick={async () => {
@@ -346,7 +386,9 @@ export default function OrderManager() {
                                 ord._id === id ? { ...ord, status: "cancelled" } : ord)
                             );
                           } catch (err) {
-                            setMsg("Error: Cancel failed");
+                            const m = err?.response?.data?.message || err.message || "Cancel failed";
+                            setMsg(`Error: ${m}`);
+                            // setMsg("Error: Cancel failed");
                           } finally {
                             setProcessingId(null);
                           }
@@ -368,7 +410,7 @@ export default function OrderManager() {
                           if (!window.confirm("Delete this order?")) return;
                           setProcessingId(id);
                           try {
-                            await del(id);
+                            await del(id);  // no confirm inside del()
                             setOrders((list) => list.filter((x) => x._id !== id));
                             setMsg("Order deleted");
                           } catch (e) {

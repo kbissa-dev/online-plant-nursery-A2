@@ -159,12 +159,19 @@ const cancelOrder = async (req, res) => {
     if (!order) return res.status(404).json({ error: "Order not found" });
 
     // customers can only update their own orders and/or cancel their own orders within 5 minutes
-    if (req.user.isCustomer() && order.createdBy.toString() !== req.user.id) {
+    if (order.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ error: "Can only cancel your own orders" });
     }
     const diffMinutes = (Date.now() - new Date(order.createdAt)) / (1000 * 60);
-    if (order.status !== "pending" || diffMinutes > 5) {
-      return res.status(400).json({ error: "Cancel allowed only within 5 minutes for pending orders" });
+    if (!['pending', 'paid'].includes(order.status) || diffMinutes > 5) {
+      return res.status(400).json({ 
+        error: "Cancel allowed only within 5 minutes for pending orders",
+       });
+    }
+
+    // Restock items on cancel
+    for(const it of order.items){
+      await Plant.findByIdAndUpdate(it.plant, { $inc: { stock: it.qty } });
     }
 
     order.status = "cancelled";
