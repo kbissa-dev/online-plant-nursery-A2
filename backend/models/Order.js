@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const OrderItemSchema = new mongoose.Schema({
   plant: { type: mongoose.Schema.Types.ObjectId, ref: 'Plant', required: true },
@@ -17,12 +18,14 @@ const OrderSchema = new mongoose.Schema(
     deliveryFee: { type: Number, default: 0, min: 0 },
     total:       { type: Number, default: 0, min: 0 },
 
-    // IMPORTANT: default to 'pending' so your canCancel() shows the button
+    // Important: default to 'pending' so canCancel() shows the button
     status: { 
       type: String, 
       enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'], 
       default: 'pending' 
     },
+
+    orderNumber: { type: Number, unique: true, index: true },
 
     // Payment details (note: for null, either drop enum
     // when null, or include null in the allowed values)
@@ -42,13 +45,29 @@ const OrderSchema = new mongoose.Schema(
 
 // Keep total consistent if caller forgets to send it
 OrderSchema.pre('save', function(next) {
-  if (this.isModified('subtotal') || this.isModified('deliveryFee') || this.isNew) {
+    if (this.isModified('subtotal') || this.isModified('deliveryFee') || this.isNew) {
     this.total = Number(this.subtotal || 0) + Number(this.deliveryFee || 0);
   }
   next();
 });
 
-// order status tracking
+// assign next orderNumber on first save
+OrderSchema.pre('save', async function (next) {
+  if(!this.isNew || this.orderNumber) return next();
+  try{
+    const c = await Counter.findByIdAndUpdate(
+      {_id: 'orders'},
+      { $inc: {seq: 1} },
+      { new: true, upsert: true },
+    );
+    this.orderNumber = c.seq;
+    next();
+  }
+  catch(err){
+    next(err);
+  } 
+});
+// Track status history
 OrderSchema.pre('save', function(next) {
   if (this.isModified('status') && !this.isNew) {
     this.statusHistory.push({
@@ -60,6 +79,6 @@ OrderSchema.pre('save', function(next) {
 
 // My orders
 OrderSchema.index({ createdBy: 1, createdAt: -1 }); // customer order management
-OrderSchema.index({ status: 1, createAt: -1 }); // staff order status management
+OrderSchema.index({ status: 1, createdAt: -1 }); // staff order status management
 
 module.exports = mongoose.model('Order', OrderSchema);

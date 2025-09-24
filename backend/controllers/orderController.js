@@ -175,6 +175,12 @@ const cancelOrder = async (req, res) => {
     }
 
     order.status = "cancelled";
+    order.statusHistory.push({
+      status: "cancelled",
+      updatedBy: req.user.id,
+      updatedAt: new Date(),
+      notes: "Customer cancelled order"
+    })
     await order.save();
     res.json({ success: true, order });
   } catch (err) {
