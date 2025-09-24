@@ -124,7 +124,7 @@ export default function OrderManager() {
       return p && (Number(p.stock) - Number(it.qty)) <=5;
     });
     if (offenders.length) {
-      return setMsg('Insufficient stock: ${offenders.map(o => o.name).join(', ')}');
+      return setMsg(`Insufficient stock: ${offenders.map(o => o.name).join(', ')}`);
     }
 
     setProcessing(true);
@@ -153,7 +153,9 @@ export default function OrderManager() {
       setRows([{ plant: "", qty: 1 }]);
       setDeliveryFee(0);
       setMsg(
-        `Order created successfully. Payment: ${data.provider || "N/A"} (${data.receiptId || "N/A"})`
+        data.message ||
+        `Order created successfully by ${user?.name || 'Guest'}.
+         Payment: ${data.provider || "N/A"} (${data.receiptId || "N/A"})`
       );
 
       if (user?.loyaltyTier && user.loyaltyTier !== 'none') {
@@ -188,7 +190,13 @@ export default function OrderManager() {
   return (
     <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
       <div className="flex justify-between items-center mb-4">
-        <h1>Order Manager</h1>
+        <h1>Order Manager
+          {user?.name && (
+            <span className="ml-3 text-green-700 text-base font-semibold">
+              Welcome, {user.name}!
+            </span>
+          )}
+        </h1>
         {user?.loyaltyTier && user.loyaltyTier !== 'none' && (
           <div className="text-right">
             <LoyaltyBadge loyaltyTier={user.loyaltyTier} size="sm" showDiscount={true} />
@@ -218,7 +226,7 @@ export default function OrderManager() {
             marginBottom: 8,
             padding: 8,
             background: '#FFF7E6',
-            border: '1px solod #FFFE0B3',
+            border: '1px solid #FFFE0B3',
             borderRadius: 6
           }}>
             {lowStockPlants.length} item{lowStockPlants.length > 1 ? 's' : ''} low on stock:&nbsp;
@@ -348,6 +356,7 @@ export default function OrderManager() {
               const id = o._id;
               return (
                 <tr key={id}>
+                  <td>#{o.orderNumber ?? o._id.slice(-4)}</td>
                   <td style={{ padding: "4px" }}>
                     {new Date(o.createdAt).toLocaleString()}
                   </td>

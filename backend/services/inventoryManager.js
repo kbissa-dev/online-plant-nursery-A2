@@ -43,11 +43,22 @@ class InventoryManager {
       createdBy: userId || null,
     });
 
+    const displayNo = order.orderNumber ?? String(order._id).slice(-4);
+
     await this.Order.findByIdAndUpdate(order._id, {
       status: 'paid',
       provider,
       receiptId: receipt.id,
     });
+
+    let customerName = 'Guest';
+
+    if (userId && this.User){
+      const userDoc = await this.User.findById(userId).lean();
+      if(userDoc?.name) {
+        customerName = userDoc.name;
+      }
+    }
 
     // update user loyalty status after successful order
     if (userId && this.User) {
@@ -71,7 +82,7 @@ class InventoryManager {
     // Notification Service (decorator pattern) - Send notification
     const { buildNotifier } = require("./notificationService");
     const notifier = buildNotifier(channels);
-    notifier.send(`Order ${order._id} placed successfully!`);
+    notifier.send(`Order #${displayNo} placed successfully by ${customerName}!`);
 
     console.log("💳", provider, "charging", total, "→ receipt", receipt.id);
     return order.toObject();
