@@ -108,7 +108,7 @@ class InventoryManager {
       // i.e., stock + delta >= lowStockThreshold + 1
       query = {
         ...query,
-        stock: { $gte: (-delta) + (this.lowStockThreshold + 1) }
+        stock: { $gte: (-delta) }
       };
     }
     // const guard = delta < 0 ? { stock: { $gte: -delta } } : {};
