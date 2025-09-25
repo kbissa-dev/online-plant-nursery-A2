@@ -1,3 +1,5 @@
+const DiscountStrategyFactory = require('../factories/discountStrategyFactory');
+
 class PricingService {
     static async calculateTotals(cart, user) {
         if (!cart || !cart.items.length) {

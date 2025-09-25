@@ -1,4 +1,4 @@
-const DiscountStrategy = require('../strategies/discountStrategy');
+const DiscountStrategy = require('./discountStrategy');
 
 class LoyaltyDiscount extends DiscountStrategy {
     constructor() {

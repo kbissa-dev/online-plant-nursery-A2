@@ -3,6 +3,10 @@ const Cart = require('../models/Cart');
 const Plant = require('../models/Plant');
 const PricingService = require('../services/pricingService');
 
+const getPopulatedCart = async (userId) => {
+    return await Cart.findOne({ userId }).populate('items.plant');
+};
+
 //was repeating checking conditions in each "cart" function, so adding this to keep the code DRY (principle)
 const validatePlantAndStock = async (plantId, qty) => {    
     if (!plantId || !qty || qty < 1) {
@@ -22,9 +26,9 @@ const validatePlantAndStock = async (plantId, qty) => {
 };
 
 const getCartWithPricing = async (userId, user) => {
-    const cart = await Cart.findOne({ userId }).populate('items.plant');
+    const cart = await getPopulatedCart(userId);
 
-    if (!cart) {
+    if (!cart || !cart.items.length) {
         return {
             userId,
             items: [],
@@ -46,7 +50,6 @@ const getCartWithPricing = async (userId, user) => {
         ...cart.toObject(),
         pricing
     };
-    
 };
 
 const addToCart = async (req, res) => { 
@@ -59,7 +62,7 @@ const addToCart = async (req, res) => {
             return res.status(validation.status).json({ error: validation.error });
         }        
 
-        //find if user cart already exist, if not create new one
+        // find if user cart already exist, if not create new one
         let cart = await Cart.findOne({ userId });
         
         if (!cart) {
@@ -102,16 +105,15 @@ const addToCart = async (req, res) => {
 
 const getCart = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const cart = await getPopulatedCart(userId);
-        const cartWithPricing = await PricingService.calculateTotals(cart, req.user);
-        res.json(cartWithPricing);
-
+        const userId = req.user.id; 
+        const cart = await Cart.findOne({ userId }).populate('items.plant');
+        
         //return an empty cart if no cart is found
         if (!cart) {
             return res.status(200).json({ items: [] });
         }
 
+        const cartWithPricing = await PricingService.calculateTotals(cart, req.user);
         res.status(200).json(cartWithPricing);
 
     } catch (error) {
@@ -120,10 +122,22 @@ const getCart = async (req, res) => {
     }
 };
 
+// const getCart = async (req, res) => {
+//     try {
+//         const userId = req.user.id;
+//         const cartWithPricing = await getCartWithPricing(userId, req.user);
+//         res.status(200).json(cartWithPricing);
+
+//     } catch (error) {
+//         console.error('Get cart error:', error);
+//         return res.status(500).json({ error: 'Server error' });
+//     }
+// };
+
 const updateCartItem = async (req, res) => {
     try {
         const { plantId, qty } = req.body;
-        const userId = req.body.id;
+        const userId = req.user.id;
 
         const validation = await validatePlantAndStock(plantId, qty);
         if (validation.error) {
@@ -135,7 +149,7 @@ const updateCartItem = async (req, res) => {
             return res.status(404).json({ error: 'Cart not found' });
         }
 
-        const itemIndex = cart.item.findIndex(
+        const itemIndex = cart.items.findIndex(
             item => item.plant.toString() === plantId
         );
 
@@ -158,7 +172,7 @@ const updateCartItem = async (req, res) => {
 const removeFromCart = async (req, res) => {
     try {
         const { plantId } = req.params;
-        const { userId } = req.user.id;
+        const userId = req.user.id;
 
         if (!plantId) {
             return res.status(400).json({ error: 'Plant ID required' });
@@ -193,11 +207,7 @@ const clearCart = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        await Cart.findOneAndDelete(
-            { userId },
-            { items: [] },
-            { upsert: true }
-        );
+        await Cart.findOneAndDelete({ userId });
 
         res.status(200).json({ 
             userId, 
@@ -218,6 +228,25 @@ const clearCart = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+// const clearCart = async (req, res) => {
+//     try {
+//         const userId = req.user.id;
+
+//         await Cart.findOneAndUpdate(
+//             { userId },
+//             { items: [] },
+//             { upsert: true }
+//         );
+
+//         const cartWithPricing = await getCartWithPricing(userId, req.user);
+//         res.status(200).json(cartWithPricing);
+        
+//     } catch (error) {
+//         console.error('Clear cart error:', error);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// };
 
 const getCartPricing = async (req, res) => {
     try {
@@ -243,7 +272,6 @@ const getCartPricing = async (req, res) => {
         console.error('Get cart pricing error:', error);
         res.status(500).json({ error: 'Server error' });
     }
-
 };
 
 module.exports = { addToCart, getCart, updateCartItem, removeFromCart, clearCart, getCartPricing };
