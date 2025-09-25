@@ -82,12 +82,12 @@ export default function OrderManager() {
     }));
 
     // check stock levels
-    const offenders = cartItems.filter(cartItem => {
-      return cartItem.plant && (Number(cartItem.plant.stock) - Number(cartItem.qty)) <= 5;
+    const stockLevel = cartItems.filter(cartItem => {
+      return cartItem.plant && (Number(cartItem.plant.stock) - Number(cartItem.qty)) <= 0;
     });
     
-    if (offenders.length) {
-      return setMsg(`Insufficient stock: ${offenders.map(o => o.plant.name).join(', ')}`);
+    if (stockLevel.length) {
+      return setMsg(`Insufficient stock: ${stockLevel.map(o => o.plant.name).join(', ')}`);
     }
 
     setProcessing(true);
