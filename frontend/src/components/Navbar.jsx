@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoyaltyBadge from './LoyaltyBadge';
+import { useCart } from '../context/CartContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { getTotalItems, openCart } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -11,97 +13,105 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const getNavigationItems = () => {
-    if (!user) return null;
-    
-    switch (user.role) {
-      case 'admin':
-        return (
-          <>
-            <Link to="/staff/plants" className="hover:text-emerald-200">Plants</Link>
-            <Link to="/staff/orders" className="hover:text-emerald-200">Orders</Link>
-            <Link to="/admin" className="hover:text-emerald-200">Admin Dashboard</Link>
-            <Link to="/profile" className="hover:text-emerald-200">Profile</Link>
-          </>
-        );
-        
-      case 'staff':
-        return (
-          <>
-            <Link to="/staff/plants" className="hover:text-emerald-200">Plants</Link>
-            <Link to="/staff/orders" className="hover:text-emerald-200">Orders</Link>
-            <Link to="/profile" className="hover:text-emerald-200">Profile</Link>
-          </>
-        );
-        
-      case 'customer':
-      default:
-        return (
-          <>
-            <Link to="/plants" className="hover:text-emerald-200">Plants</Link>
-            <Link to="/orders" className="hover:text-emerald-200">My Orders</Link>
-            <Link to="/profile" className="hover:text-emerald-200">Profile</Link>
-          </>
-        );
-    }
-  };
+return (
+    <nav className="bg-green-600 text-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          {/* logo/brand */}
+          <Link to="/" className="text-xl font-bold hover:text-green-200">
+            GREEN - Online Plant Nursery
+          </Link>
 
-  const getRoleBadge = () => {
-    if (!user) return null;
-    
-    const roleColors = {
-      'admin': 'bg-red-500 text-white',
-      'staff': 'bg-blue-500 text-white',
-      'customer': 'bg-green-500 text-white'
-    };
-      
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${roleColors[user.role]}`}>
-        {user.role.toUpperCase()}
-      </span>
-    );
-  };
+          {/* navigation links */}
+          <div className="flex items-center space-x-6">
+            {user ? (
+              <>
+                {/* customer navigation */}
+                {user.role === 'customer' && (
+                  <>
+                    <Link to="/plants" className="hover:text-green-200">
+                      Plants
+                    </Link>
+                    <Link to="/orders" className="hover:text-green-200">
+                      My Orders
+                    </Link>
+                    <Link to="/profile" className="hover:text-green-200">
+                      Profile
+                    </Link>
+                    
+                    {/* cart indicator */}
+                    <button
+                      onClick={openCart}
+                      className="relative hover:text-green-200 flex items-center"
+                    >
+                      <span>Cart</span>
+                      {getTotalItems() > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {getTotalItems()}
+                        </span>
+                      )}
+                    </button>
+                  </>
+                )}
 
-  return (
-    <nav className="sticky top-0 inset-x-0 z-50 bg-emerald-600 text-white">
-      <div className="max-w-[1200px] mx-auto p-4 flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">GREEN Online Plant Nursery</Link>
-        
-        {user ? (
-          <div className="flex items-center space-x-4">
-            {getRoleBadge()}
-            
-            {user.role === 'customer' && (
-              <LoyaltyBadge loyaltyTier={user.loyaltyTier} size="xs" />
+                {/* staff/admin Navigation */}
+                {(user.role === 'staff' || user.role === 'admin') && (
+                  <>
+                    <Link to="/staff" className="hover:text-green-200">
+                      Dashboard
+                    </Link>
+                    <Link to="/staff/plants" className="hover:text-green-200">
+                      Manage Plants
+                    </Link>
+                    <Link to="/staff/orders" className="hover:text-green-200">
+                      Manage Orders
+                    </Link>
+                    {user.role === 'admin' && (
+                      <Link to="/admin" className="hover:text-green-200">
+                        Admin Panel
+                      </Link>
+                    )}
+                  </>
+                )}
+
+                {/* user info and logout */}
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">
+                      Welcome, {user.name}
+                    </span>
+                    {/* show loyalty badge for customers */}
+                    {user.role === 'customer' && user.loyaltyTier && user.loyaltyTier !== 'none' && (
+                      <LoyaltyBadge loyaltyTier={user.loyaltyTier} size="xs" />
+                    )}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-green-700 hover:bg-green-800 px-3 py-1 rounded text-sm"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Guest Navigation */
+              <>
+                <Link 
+                  to="/login" 
+                  className="bg-green-700 hover:bg-green-800 px-4 py-2 rounded"
+                >
+                  Login
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="border border-green-400 hover:bg-green-700 px-4 py-2 rounded"
+                >
+                  Register
+                </Link>
+              </>
             )}
-            
-            {/* role based navigation */}
-            <div className="flex items-center space-x-4">
-              {getNavigationItems()}
-            </div>
-            
-            {/* welcome user info and logout */}
-            <div className="flex items-center space-x-3">
-              <span className="text-sm">Hi, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-emerald-700 hover:bg-emerald-800 px-3 py-1 rounded transition-colors text-sm"
-              >
-                Logout
-              </button>
-            </div>
           </div>
-        ) : (
-          <div className="flex space-x-4">
-            <Link to="/login" className="hover:text-emerald-200">Login</Link>
-            <Link
-              to="/register"
-              className="bg-emerald-700 hover:bg-emerald-800 px-3 py-1 rounded transition-colors"
-            >
-              Register
-            </Link>
-          </div>
-        )}
+        </div>
       </div>
     </nav>
   );

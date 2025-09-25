@@ -1,29 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../axiosConfig";
 import PaymentSelector from "../components/PaymentSelector";
 import LoyaltyBadge from "../components/LoyaltyBadge";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
 export default function OrderManager() {
   const { user } = useAuth();
-  const [plants, setPlants] = useState([]);
+  const { cartItems, clearCart, getTotalPrice } = useCart();
   const [orders, setOrders] = useState([]);
-  const [rows, setRows] = useState([{ plant: "", qty: 1 }]);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [provider, setProvider] = useState("stripe");
-  const [processing, setProcessing] = useState(false); // added for payment process (mock)
+  const [processing, setProcessing] = useState(false);
   const [channels, setChannels] = useState({ email: true, sms: false, toast: true });
   const [processingId, setProcessingId] = useState(null);
-  // const [notifyResult, setNotifyResult] = useState(null);
 
-  // Customer - Cancel order
+  // customer -> cancel order
   const canCancel = (order) => {
     const created = new Date(order.createdAt);
     const now = new Date();
     const diffMinutes = (now - created) / (1000 * 60);
-    return order.status !== "cancelled" && diffMinutes <= 5; // allow paid too
+    return order.status !== "cancelled" && diffMinutes <= 5;
   };
 
   // API helper
@@ -34,16 +33,11 @@ export default function OrderManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const [pRes, oRes] = await Promise.all([
-        api.get("/plants"),
-        api.get("/orders"),
-      ]);
-      setPlants(pRes.data);
+      const oRes = await api.get("/orders");
       setOrders(oRes.data);
-      setMsg(""); // clear any old “no token” text
+      setMsg("");
     } catch (e) {
-      // show something soft, but don’t block the page forever
-      const m = e?.response?.data?.message || e.message || "Failed to load data";
+      const m = e?.response?.data?.message || e.message || "Failed to load orders";
       setMsg(m);
     } finally {
       setLoading(false);
@@ -54,39 +48,13 @@ export default function OrderManager() {
     load();
   }, []);
 
-  const plantById = useMemo(
-    () => Object.fromEntries(plants.map((p) => [p._id, p])),
-    [plants] // dependency array
-  );
-
-  // Which plants are low
-  const lowStockPlants = useMemo(
-    () => plants.filter((p) => p?.isLowStock === true || Number(p?.stock) <= 5),
-    [plants]  // dependency array
-  );
-
-  const subtotal = rows.reduce(
-    (s, r) => s + (plantById[r.plant]?.price ?? 0) * Number(r.qty || 0),
-    0
-  );
+  const subtotal = getTotalPrice();
   const total = subtotal + Number(deliveryFee || 0);
-
-  const addRow = () => setRows((r) => [...r, { plant: "", qty: 1 }]);
-  const removeRow = (i) =>
-    setRows((r) => r.filter((_, idx) => idx !== i));
-  const changeRow = (i, key, val) =>
-    setRows((r) =>
-      r.map((row, idx) =>
-        idx === i ? { ...row, [key]: val } : row
-      )
-    );
 
   const processPayment = async (amount, provider) => {
     await new Promise(resolve => setTimeout(resolve, 1500)); // simulate latency
 
-    // generate mock receipt
     const timestamp = Date.now();
-    // const random = Math.floor(Math.random() * 1234);
     const receiptId = `${provider.toUpperCase()}_${timestamp}`;
 
     return {
@@ -101,30 +69,25 @@ export default function OrderManager() {
   const createOrder = async (e) => {
     e.preventDefault();
 
-    // Build items array with plant details
-    // UX guard: block orders that would drop stock to <= 5
-   const items = rows
-      .filter(r => r.plant && Number(r.qty) > 0)
-      .map(r => {
-        const p = plantById[r.plant];
-        return {
-          plant: r.plant,
-          name: p?.name,
-          price: Number(p?.price ?? 0),
-          qty: Number(r.qty)
-        };
-      }); 
-
-      if (!items.length) {
-      return setMsg("Add at least one item");
+    if (cartItems.length === 0) {
+      return setMsg("Your cart is empty. Add some plants first!");
     }
 
-    const offenders = items.filter(it => {
-      const p = plantById[it.plant];
-      return p && (Number(p.stock) - Number(it.qty)) <=5;
+    // build items array from cart
+    const items = cartItems.map(cartItem => ({
+      plant: cartItem.plant._id,
+      name: cartItem.plant.name,
+      price: Number(cartItem.plant.price),
+      qty: Number(cartItem.qty)
+    }));
+
+    // check stock levels
+    const offenders = cartItems.filter(cartItem => {
+      return cartItem.plant && (Number(cartItem.plant.stock) - Number(cartItem.qty)) <= 5;
     });
+    
     if (offenders.length) {
-      return setMsg(`Insufficient stock: ${offenders.map(o => o.name).join(', ')}`);
+      return setMsg(`Insufficient stock: ${offenders.map(o => o.plant.name).join(', ')}`);
     }
 
     setProcessing(true);
@@ -143,14 +106,16 @@ export default function OrderManager() {
         deliveryFee: Number(deliveryFee || 0),
         provider: paymentResult.provider,
         receiptId: paymentResult.receiptId,
-        channels: chosenChannels, // Send channels
+        channels: chosenChannels,
       });
 
       console.log(`💳 [Frontend] ${provider} charged $${data?.total ?? "?"} → receipt ${paymentResult.receiptId ?? "N/A"}`);
 
-      // Update UI with the server's order
-      setOrders((o) => [data, ...o]); // After the POST succeeds
-      setRows([{ plant: "", qty: 1 }]);
+      // update UI with the server's order
+      setOrders((o) => [data, ...o]);
+      
+      // clear cart after successful order
+      clearCart();
       setDeliveryFee(0);
       setMsg(
         data.message ||
@@ -161,7 +126,7 @@ export default function OrderManager() {
       if (user?.loyaltyTier && user.loyaltyTier !== 'none') {
         const pointsEarned = Math.floor(data.total);
         setTimeout(() => {
-          setMsg(prev => `${prev} | 🎉 You earned ${pointsEarned} loyalty points!`);
+          setMsg(prev => `${prev} | You earned ${pointsEarned} loyalty points!`);
         }, 2000);
       }
     } catch (e) {
@@ -172,10 +137,9 @@ export default function OrderManager() {
     }
   };
 
-  // Admin- Delete order
-  // const isAdmin = true; real auth later
   const isAdmin = user?.role === 'admin' || user?.role === 'staff';
   const isCustomer = user?.role === 'customer';
+
   const del = async (id) => {
     if (!window.confirm("Delete this order?")) return;
     try {
@@ -190,7 +154,7 @@ export default function OrderManager() {
   return (
     <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
       <div className="flex justify-between items-center mb-4">
-        <h1>Order Manager
+        <h1>Checkout & Orders
           {user?.name && (
             <span className="ml-3 text-green-700 text-base font-semibold">
               Welcome, {user.name}!
@@ -206,141 +170,133 @@ export default function OrderManager() {
           </div>
         )}
       </div>
+
       {msg && (
         <div style={{
           background: msg.includes("success") ? "#e3f0e3" : "#f8f9ff",
           border: `1px solid ${msg.includes("success") ? "#4caf50" : "#e6e8ff"}`,
           padding: 8,
+          marginBottom: 16,
           color: msg.includes("failed") || msg.includes("error") ? "#d32f2f" : "inherit"
         }}>
           {msg}
         </div>
       )}
 
-      <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
-        <h3>Create Order</h3>
-
-        {/*Show low-stock warning*/}
-        {lowStockPlants.length > 0 && (
-          <div role="alert" style={{
-            marginBottom: 8,
-            padding: 8,
-            background: '#FFF7E6',
-            border: '1px solid #FFFE0B3',
-            borderRadius: 6
-          }}>
-            {lowStockPlants.length} item{lowStockPlants.length > 1 ? 's' : ''} low on stock:&nbsp;
-            {lowStockPlants.slice(0, 4).map(p => `${p.name} (${p.stock} left)`).join(', ')}
-            {lowStockPlants.length > 4 ? '...' : ''}
+      {/* Cart Review & Checkout */}
+      <div style={{ marginBottom: 32, padding: 16, border: "1px solid #e0e0e0", borderRadius: 8 }}>
+        <h3>Cart Review & Checkout</h3>
+        
+        {cartItems.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 20, color: "#666" }}>
+            <p>Your cart is empty.</p>
+            <p>Visit the <a href="/plants" style={{ color: "#4caf50" }}>Plants page</a> to add items to your cart.</p>
           </div>
+        ) : (
+          <>
+            {/* Cart Items Display */}
+            <div style={{ marginBottom: 16 }}>
+              <h4>Items in your cart:</h4>
+              {cartItems.map((cartItem, i) => (
+                <div key={i} style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  padding: "8px 0",
+                  borderBottom: "1px solid #f0f0f0"
+                }}>
+                  <div>
+                    <strong>{cartItem.plant.name}</strong> × {cartItem.qty}
+                    <div style={{ fontSize: "0.9em", color: "#666" }}>
+                      ${Number(cartItem.plant.price).toFixed(2)} each
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: "bold" }}>
+                    ${(Number(cartItem.plant.price) * cartItem.qty).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 8,
+                alignItems: "center",
+                padding: "12px 0"
+              }}>
+                <div><strong>Subtotal: ${subtotal.toFixed(2)}</strong></div>
+                <div>
+                  Delivery Fee:{" "}
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={deliveryFee}
+                    onChange={(e) => setDeliveryFee(e.target.value)}
+                    style={{ width: "80px", marginLeft: "8px" }}
+                  />
+                </div>
+                <div>
+                  <strong>Total: ${total.toFixed(2)}</strong>
+                </div>
+              </div>
+
+              <PaymentSelector value={provider} onChange={setProvider} />
+
+              <div style={{ marginTop: 8 }}>
+                <strong>Notify me via:</strong>{" "}
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={channels.email}
+                    onChange={e => setChannels(x => ({ ...x, email: e.target.checked }))}
+                  />{" "}
+                  Email</label>{" "}
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={channels.sms}
+                    onChange={e => setChannels(x => ({ ...x, sms: e.target.checked }))}
+                  />{" "}
+                  SMS</label>{" "}
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={channels.toast}
+                    onChange={e => setChannels(x => ({ ...x, toast: e.target.checked }))}
+                  />{" "}
+                  Toast</label>
+              </div>
+
+              <button type="submit" disabled={processing} style={{
+                backgroundColor: processing ? "#ccc" : "#4caf50",
+                color: "white",
+                padding: "12px 16px",
+                border: "none",
+                borderRadius: "4px",
+                cursor: processing ? "not-allowed" : "pointer"
+              }}>
+                {processing ? "Processing Payment..." : `Place Order - $${total.toFixed(2)}`}
+              </button>
+            </form>
+          </>
         )}
-        {rows.map((r, i) => (
-          <div
-            key={i}
-            style={{ display: "grid", gridTemplateColumns: "3fr 1fr auto", gap: 8 }}
-          >
-            <select
-              value={r.plant}
-              onChange={(e) => changeRow(i, "plant", e.target.value)}
-              required
-            >
-              <option value="">Select plant…</option>
-              {plants.map((p) => {
-                const low = (p.isLowStock === true) || (Number(p.stock) <= 5);
-                return (
-                  <option
-                    key={p._id}
-                    value={p._id}
-                    disabled={low}
-                    title={low ? `Low stock: ${p.stock} left` : ''}
-                    aria-disabled={low}>
-                    {p.name} - ${Number(p.price).toFixed(2)} {low ? `(Low stock - ${p.stock} left)` : ''}
-                  </option>
-                );
-              })}
-            </select>
-            <input
-              type="number"
-              min="1"
-              value={r.qty}
-              onChange={(e) => changeRow(i, "qty", e.target.value)}
-            />
-            <button type="button" onClick={() => removeRow(i)}>
-              Remove
-            </button>
-          </div>
-        ))}
-        <div>
-          <button type="button" onClick={addRow}>
-            + Add Item
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 8,
-            alignItems: "center",
-          }}
-        >
-          <div>Subtotal: ${subtotal.toFixed(2)}</div>
-          <div>
-            Delivery Fee:{" "}
-            <input
-              type="number"
-              step="0.01"
-              value={deliveryFee}
-              onChange={(e) => setDeliveryFee(e.target.value)}
-            />
-          </div>
-          <div>
-            <strong>Total: ${total.toFixed(2)}</strong>
-          </div>
-        </div>
-
-        <PaymentSelector value={provider} onChange={setProvider} />
-
-        <div style={{ marginTop: 8 }}>
-          <strong>Notify me via:</strong>{" "}
-          <label>
-            <input
-              type="checkbox"
-              checked={channels.email}
-              onChange={e => setChannels(x => ({ ...x, email: e.target.checked }))}
-            />{" "}
-            Email</label>{" "}
-          <label>
-            <input
-              type="checkbox"
-              checked={channels.sms}
-              onChange={e => setChannels(x => ({ ...x, sms: e.target.checked }))}
-            />{" "}
-            SMS</label>{" "}
-          <label>
-            <input
-              type="checkbox"
-              checked={channels.toast}
-              onChange={e => setChannels(x => ({ ...x, toast: e.target.checked }))}
-            />{" "}
-            Toast</label>
-        </div>
-
-        <button type="submit" disabled={processing}>
-          {processing ? "Processing Payment..." : "Create Order"}
-        </button>
-      </form>
+      </div>
 
       <hr style={{ margin: "16px 0" }} />
+      
+      <h3>Order History</h3>
 
       {loading ? (
-        <p>Loading…</p>
+        <p>Loading orders…</p>
       ) : orders.length === 0 ? (
         <p>No orders yet</p>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
+              <th style={{ textAlign: "left", padding: "4px" }}>Order #</th>
               <th style={{ textAlign: "left", padding: "4px" }}>Created</th>
               <th style={{ textAlign: "left", padding: "4px" }}>Items</th>
               <th style={{ textAlign: "right", padding: "4px" }}>Subtotal</th>
@@ -388,7 +344,7 @@ export default function OrderManager() {
                         onClick={async () => {
                           setProcessingId(id);
                           try {
-                            await cancelOrder(id); // call API
+                            await cancelOrder(id);
                             setMsg("Success: Order cancelled!");
                             setOrders((prev) =>
                               prev.map((ord) =>
@@ -397,7 +353,6 @@ export default function OrderManager() {
                           } catch (err) {
                             const m = err?.response?.data?.message || err.message || "Cancel failed";
                             setMsg(`Error: ${m}`);
-                            // setMsg("Error: Cancel failed");
                           } finally {
                             setProcessingId(null);
                           }
@@ -419,7 +374,7 @@ export default function OrderManager() {
                           if (!window.confirm("Delete this order?")) return;
                           setProcessingId(id);
                           try {
-                            await del(id);  // no confirm inside del()
+                            await del(id);
                             setOrders((list) => list.filter((x) => x._id !== id));
                             setMsg("Order deleted");
                           } catch (e) {
