@@ -17,16 +17,16 @@ return (
     <nav className="bg-green-600 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          {/* Logo/Brand */}
+          {/* logo/brand */}
           <Link to="/" className="text-xl font-bold hover:text-green-200">
             GREEN - Online Plant Nursery
           </Link>
 
-          {/* Navigation Links */}
+          {/* navigation links */}
           <div className="flex items-center space-x-6">
             {user ? (
               <>
-                {/* Customer Navigation */}
+                {/* customer navigation */}
                 {user.role === 'customer' && (
                   <>
                     <Link to="/plants" className="hover:text-green-200">
@@ -39,7 +39,7 @@ return (
                       Profile
                     </Link>
                     
-                    {/* Cart Indicator */}
+                    {/* cart indicator */}
                     <button
                       onClick={openCart}
                       className="relative hover:text-green-200 flex items-center"
@@ -54,7 +54,7 @@ return (
                   </>
                 )}
 
-                {/* Staff/Admin Navigation */}
+                {/* staff/admin Navigation */}
                 {(user.role === 'staff' || user.role === 'admin') && (
                   <>
                     <Link to="/staff" className="hover:text-green-200">
@@ -74,11 +74,17 @@ return (
                   </>
                 )}
 
-                {/* User Info & Logout */}
+                {/* user info and logout */}
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm">
-                    Welcome, {user.name}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">
+                      Welcome, {user.name}
+                    </span>
+                    {/* show loyalty badge for customers */}
+                    {user.role === 'customer' && user.loyaltyTier && user.loyaltyTier !== 'none' && (
+                      <LoyaltyBadge loyaltyTier={user.loyaltyTier} size="xs" />
+                    )}
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="bg-green-700 hover:bg-green-800 px-3 py-1 rounded text-sm"
