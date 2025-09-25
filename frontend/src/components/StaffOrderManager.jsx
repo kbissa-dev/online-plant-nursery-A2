@@ -175,7 +175,7 @@ const StaffOrderManager = () => {
                     #{order._id.slice(-6)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.createdBy || 'Guest'}
+                    {order.createdBy?.name || 'Guest'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     <div className="max-w-48">

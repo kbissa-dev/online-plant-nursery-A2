@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import CartModal from './components/CartModal';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -10,7 +11,6 @@ import StaffDashboard from './components/StaffDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import PlantsPage from './pages/PlantsPage';          // customer plant catalog
 import OrderManager from './components/OrderManager'; // customer orders
-
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -47,67 +47,66 @@ function App() {
   return (
     <Router>
       <Navbar />
+      <CartModal />
       <main className="app-main">
-        {/* simple centered container */}
-        {/* <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}></main>*/}
-        <Routes>
-          {/*default and public routes*/}
-          <Route path="/" element={user ? <RoleRedirect /> : <Navigate to="/login" />} />
-          <Route path="/login" element={!user ? <Login /> : <RoleRedirect />} />
-          <Route path="/register" element={!user ? <Register /> : <RoleRedirect />} />   
+          <Routes>
+            {/*default and public routes*/}
+            <Route path="/" element={user ? <RoleRedirect /> : <Navigate to="/login" />} />
+            <Route path="/login" element={!user ? <Login /> : <RoleRedirect />} />
+            <Route path="/register" element={!user ? <Register /> : <RoleRedirect />} />   
 
-          {/* customers routes */}
-          {/* customer catalog */}
-          <Route path="/plants" element={
-            <ProtectedRoute allowedRoles={['customer']}>
-              <PlantsPage />
-            </ProtectedRoute>
-          } />
+            {/* customers routes */}
+            {/* customer catalog */}
+            <Route path="/plants" element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <PlantsPage />
+              </ProtectedRoute>
+            } />
 
-          {/* customer orders */}
-          <Route path="/orders" element={
-            <ProtectedRoute allowedRoles={['customer']}>
-              <OrderManager />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
+            {/* customer orders */}
+            <Route path="/orders" element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <OrderManager />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
 
-          {/* staff/admin routes */}
-          <Route path="/staff" element={
-            <ProtectedRoute allowedRoles={['staff', 'admin']}>
-              <StaffDashboard />
-            </ProtectedRoute>
-          } />
-          {/* staff plant crud management */}
-          <Route path="/staff/plants" element={
-            <ProtectedRoute allowedRoles={['staff', 'admin']}>
-              <PlantManager />
-            </ProtectedRoute>
-          } />
-          {/* staff order management */}
-          <Route path="/staff/orders" element={
-            <ProtectedRoute allowedRoles={['staff', 'admin']}>
-              <StaffOrderManager />
-            </ProtectedRoute>
-          } />
+            {/* staff/admin routes */}
+            <Route path="/staff" element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <StaffDashboard />
+              </ProtectedRoute>
+            } />
+            {/* staff plant crud management */}
+            <Route path="/staff/plants" element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <PlantManager />
+              </ProtectedRoute>
+            } />
+            {/* staff order management */}
+            <Route path="/staff/orders" element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <StaffOrderManager />
+              </ProtectedRoute>
+            } />
 
-          {/* admin only routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
+            {/* admin only routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
 
-          {/* or redirect based on role */}
-          <Route path="*" element={<RoleRedirect />} />
-        </Routes>
-      </main>
-    </Router>
-  );
-}
-
-export default App;
+            {/* or redirect based on role */}
+            <Route path="*" element={<RoleRedirect />} />
+          </Routes>
+        </main>
+      </Router>
+    );
+  }
+  
+  export default App;
