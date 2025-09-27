@@ -11,7 +11,9 @@ const CartModal = () => {
     updateQuantity, 
     removeFromCart, 
     clearCart,
-    getTotalPrice,
+    cartTotals,
+    calculationLoading,
+    calculationError,
     canAddMore 
   } = useCart();
   const navigate = useNavigate();
@@ -39,6 +41,11 @@ const CartModal = () => {
   const handleQuantityDecrease = (item) => {
     updateQuantity(item.plant._id, item.qty - 1);
   };
+
+  const hasDiscounts = cartTotals.discounts && cartTotals.discounts.length > 0;
+  const isCheckoutDisabled = !user || user.role !== 'customer' || 
+    cartItems.some(item => item.qty > item.plant.stock) || 
+    calculationError;
 
   return (
     <div 
@@ -129,7 +136,7 @@ const CartModal = () => {
                     
                     {item.qty > item.plant.stock && (
                       <div className="text-xs text-red-600 mt-1 font-medium">
-                        ⚠️ Exceeds available stock! Only {item.plant.stock} available
+                        Exceeds available stock! Only {item.plant.stock} available
                       </div>
                     )}
                   </div>
@@ -139,36 +146,72 @@ const CartModal = () => {
           )}
         </div>
 
-        {/* footer */}
+        {/* footer with pricing */}
         {cartItems.length > 0 && (
           <div className="p-4 border-t border-gray-200">
-            {/* show stock warning if any items exceed stock */}
-            {cartItems.some(item => item.qty > item.plant.stock) && (
-              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                ⚠️ Some items exceed available stock. Please adjust quantities before checkout.
+            {/* calculation loading */}
+            {calculationLoading && (
+              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                Calculating prices...
               </div>
             )}
-            
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-semibold">Total:</span>
-              <span className="font-semibold text-lg">
-                ${getTotalPrice().toFixed(2)}
-              </span>
+
+            {/* calculation error */}
+            {calculationError && (
+              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {calculationError}
+              </div>
+            )}
+
+            {/* stock warnings */}
+            {cartItems.some(item => item.qty > item.plant.stock) && (
+              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                Some items exceed available stock. Please adjust quantities before checkout.
+              </div>
+            )}
+
+            {/* pricing breakdown */}
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between items-center">
+                <span>Subtotal:</span>
+                <span>${cartTotals.subtotal}</span>
+              </div>
+
+              {/* discounts */}
+              {hasDiscounts && (
+                <div className="border-t border-gray-200 pt-2">
+                  <div className="text-sm font-medium text-green-600 mb-1">Discounts Applied:</div>
+                  {cartTotals.discounts.map((discount, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-green-600">
+                        {discount.name}: {discount.description}
+                      </span>
+                      <span className="text-green-600">-${discount.amount}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center text-sm font-medium border-t border-gray-100 pt-1">
+                    <span className="text-green-600">Total Discount:</span>
+                    <span className="text-green-600">-${cartTotals.totalDiscount}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center font-semibold text-lg border-t border-gray-200 pt-2">
+                <span>Total:</span>
+                <span>${cartTotals.total}</span>
+              </div>
             </div>
             
             <div className="space-y-2">
               <button
                 onClick={handleCheckout}
                 className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled={
-                  !user || 
-                  user.role !== 'customer' || 
-                  cartItems.some(item => item.qty > item.plant.stock) // prevent checkout if stock exceeded
-                }
+                disabled={isCheckoutDisabled}
               >
                 {!user ? 'Login to Checkout' : 
                  user.role !== 'customer' ? 'Customer Access Only' : 
                  cartItems.some(item => item.qty > item.plant.stock) ? 'Adjust Quantities First' :
+                 calculationError ? 'Price calculation failed' :
                  'Proceed to Checkout'}
               </button>
               
