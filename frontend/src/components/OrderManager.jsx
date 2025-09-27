@@ -24,7 +24,7 @@ export default function OrderManager() {
   const [channels, setChannels] = useState({ email: true, sms: false, toast: true });
   const [processingId, setProcessingId] = useState(null);
 
-  // Update cart totals when delivery fee changes (simple timeout instead of debouncing)
+  // update cart totals when delivery fee changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (cartItems.length > 0) {
@@ -175,7 +175,6 @@ export default function OrderManager() {
   const isCheckoutDisabled = processing || calculationError || calculationLoading;
   const needsCalculation = cartItems.length > 0 && cartTotals.subtotal === "0.00";
 
-  // Manual calculation trigger
   const triggerCalculation = () => {
     calculateWithDelivery(Number(deliveryFee) || 0);
   };
@@ -212,7 +211,7 @@ export default function OrderManager() {
         </div>
       )}
 
-      {/* Cart Review & Checkout */}
+      {/* cart review and checkout */}
       <div style={{ marginBottom: 32, padding: 16, border: "1px solid #e0e0e0", borderRadius: 8 }}>
         <h3>Cart Review & Checkout</h3>
         
@@ -223,7 +222,7 @@ export default function OrderManager() {
           </div>
         ) : (
           <>
-            {/* Show calculation button if needed */}
+            {/* show calculation button if needed */}
             {needsCalculation && (
               <div style={{ 
                 textAlign: "center", 
@@ -249,7 +248,7 @@ export default function OrderManager() {
               </div>
             )}
 
-            {/* Cart Items Display */}
+            {/* cart items display */}
             <div style={{ marginBottom: 16 }}>
               <h4>Items in your cart:</h4>
               {cartItems.map((cartItem, i) => (
@@ -273,7 +272,7 @@ export default function OrderManager() {
               ))}
             </div>
 
-            {/* Calculation Status */}
+            {/* calculation status */}
             {calculationLoading && (
               <div style={{ 
                 background: "#e3f2fd", 
@@ -295,12 +294,12 @@ export default function OrderManager() {
                 borderRadius: 4,
                 color: "#d32f2f"
               }}>
-                ⚠️ Price calculation failed: {calculationError}
+                Price calculation failed: {calculationError}
               </div>
             )}
 
             <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
-              {/* Pricing Display */}
+              {/* pricing display */}
               <div style={{ 
                 background: "#f9f9f9", 
                 padding: 16, 
@@ -316,7 +315,7 @@ export default function OrderManager() {
                   <strong>${cartTotals.subtotal}</strong>
                 </div>
 
-                {/* Discount Breakdown */}
+                {/* discount breakdown */}
                 {hasDiscounts && (
                   <div style={{ 
                     borderTop: "1px solid #e0e0e0", 
