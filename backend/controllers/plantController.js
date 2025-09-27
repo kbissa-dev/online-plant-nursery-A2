@@ -1,4 +1,3 @@
-// backend/controllers/plantController.js
 const mongoose = require('mongoose');
 const Plant = require('../models/Plant');
 
@@ -20,20 +19,26 @@ const getPlants = async (req, res) => {
 const addPlant = async (req, res) => {
   try {
     const { name, price, stock, description, category } = req.body;
+
     if (!name || price == null) {
       return res.status(400).json({ message: 'name and price are required' });
     }
+
+    const image = req.file ? req.file.filename : 'placeholder.jpg';
+
     const plant = await Plant.create({
       name,
       price,
       stock: stock ?? 0,
       description,
       category,
+      image,
       createdBy: req.user?.id, // requires auth middleware to be set
     });
+
     res.status(201).json(plant);
   } catch (err) {
-    // ValidationError -> 400
+    // validationError -> 400
     if (err.name === 'ValidationError') {
       return res.status(400).json({ message: err.message });
     }
@@ -54,6 +59,10 @@ const updatePlant = async (req, res) => {
       ...(req.body.description !== undefined && { description: req.body.description }),
       ...(req.body.category !== undefined && { category: req.body.category }),
     };
+
+    if (req.file) {
+      update.image = req.file.filename;
+    } // keeping old image and not remove them for this project
 
     const plant = await Plant.findByIdAndUpdate(id, update, { new: true, runValidators: true });
     if (!plant) return res.status(404).json({ message: 'Plant not found' });

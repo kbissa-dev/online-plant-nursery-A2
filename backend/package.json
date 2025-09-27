@@ -19,6 +19,7 @@
     "express": "^4.17.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^6.0.14",
+    "multer": "^2.0.2",
     "online-plant-nursery": "file:..",
     "request": "^2.88.2"
   },
