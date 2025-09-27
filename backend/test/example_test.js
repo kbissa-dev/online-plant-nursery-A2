@@ -30,6 +30,14 @@ let port;
 
  // Plant Controller Tests
 describe('AddPlant Function Test', () => {
+    let createStub;
+
+  afterEach(() => {
+    if (createStub && createStub.restore) {
+      createStub.restore();
+    }
+    sinon.restore();
+  });
 
   it('should create a new plant successfully', async () => {
     const req = {
@@ -51,6 +59,7 @@ describe('AddPlant Function Test', () => {
       stock: req.body.stock,
       description: req.body.description,
       category: req.body.category,
+      image: 'placeholder.jpg',
       createdBy: req.user.id
     })).to.be.true;
     expect(res.status.calledWith(201)).to.be.true;
@@ -73,7 +82,6 @@ describe('AddPlant Function Test', () => {
   });
 
 });
-
 
 describe('UpdatePlant Function Test', () => {
     
