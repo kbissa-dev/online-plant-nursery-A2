@@ -1,14 +1,14 @@
 [
-  { "name": "Rose",       "price": 22, "stock": 8,  "category": "Flower, Outdoor, Sun",        "description": "Classic garden rose" },
-  { "name": "Lavender",   "price": 16, "stock": 20, "category": "Flower, Outdoor, Sun",        "description": "Fragrant purple stems" },
-  { "name": "Daisy",      "price": 14, "stock": 18, "category": "Flower, Outdoor, Sun/Part",   "description": "Cheerful white petals" },
-  { "name": "Peace Lily", "price": 18, "stock": 10, "category": "Flower, Indoor, Shade",       "description": "White blooms, low light" },
-  { "name": "Fern",       "price": 15, "stock": 12, "category": "Foliage, Indoor, Shade",      "description": "Easy green house plant" },
-  { "name": "Succulent",  "price": 10, "stock": 30, "category": "Foliage, Indoor, Sun",        "description": "Low water, sunny spot" },
-  { "name": "Lemon Tree", "price": 30, "stock": 7,  "category": "Fruit, Outdoor, Sun",         "description": "Backyard lemons" },
-  { "name": "Strawberry", "price": 12, "stock": 25, "category": "Fruit, Outdoor, Sun",         "description": "Sweet red fruit" },
-  { "name": "Blueberry",  "price": 19, "stock": 11, "category": "Fruit, Outdoor, Sun/Part",    "description": "Small shrub, berries" },
-  { "name": "Basil",      "price": 12, "stock": 22, "category": "Herb, Outdoor, Sun",          "description": "Great for pasta" },
-  { "name": "Mint",       "price": 11, "stock": 26, "category": "Herb, Outdoor, Shade/Part",   "description": "Fast growing herb" },
-  { "name": "Monstera",   "price": 28, "stock": 5,  "category": "Foliage, Indoor, Shade/Part", "description": "Big split leaves" }
+  { "name": "Rose",       "price": 22, "stock": 8,  "category": "Flower, Outdoor, Sun",        "description": "Classic garden rose",      "image": "rose.jpg" },
+  { "name": "Lavender",   "price": 16, "stock": 20, "category": "Flower, Outdoor, Sun",        "description": "Fragrant purple stems",    "image": "lavender.jpg" },
+  { "name": "Daisy",      "price": 14, "stock": 18, "category": "Flower, Outdoor, Sun/Part",   "description": "Cheerful white petals",    "image": "daisy.jpg" },
+  { "name": "Peace Lily", "price": 18, "stock": 10, "category": "Flower, Indoor, Shade",       "description": "White blooms, low light",  "image": "peace_lily.jpg" },
+  { "name": "Fern",       "price": 15, "stock": 12, "category": "Foliage, Indoor, Shade",      "description": "Easy green house plant",   "image": "fern.jpg" },
+  { "name": "Succulent",  "price": 10, "stock": 30, "category": "Foliage, Indoor, Sun",        "description": "Low water, sunny spot",    "image": "succulent.jpg" },
+  { "name": "Lemon Tree", "price": 30, "stock": 7,  "category": "Fruit, Outdoor, Sun",         "description": "Backyard lemons",          "image": "lemon_tree.jpg" },
+  { "name": "Strawberry", "price": 12, "stock": 25, "category": "Fruit, Outdoor, Sun",         "description": "Sweet red fruit",          "image": "strawberry.jpg" },
+  { "name": "Blueberry",  "price": 19, "stock": 11, "category": "Fruit, Outdoor, Sun/Part",    "description": "Small shrub, berries",     "image": "blueberry.jpg" },
+  { "name": "Basil",      "price": 12, "stock": 22, "category": "Herb, Outdoor, Sun",          "description": "Great for pasta",          "image": "basil.jpg" },
+  { "name": "Mint",       "price": 11, "stock": 26, "category": "Herb, Outdoor, Shade/Part",   "description": "Fast growing herb",        "image": "mint.jpg" },
+  { "name": "Monstera",   "price": 28, "stock": 5,  "category": "Foliage, Indoor, Shade/Part", "description": "Big split leaves",         "image": "monstera.jpg" }
 ]

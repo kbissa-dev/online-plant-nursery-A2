@@ -134,9 +134,16 @@ export default function PlantsPage() {
               return (
                 <div key={plant._id} className="group relative bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
                   <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-t-lg bg-gray-200">
-                    {/* placeholder for plant image */}
-                    <div className="h-48 w-full bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                      <span className="text-green-700 font-medium">{plant.name}</span>
+                    {/* placeholder for plant image */}                   
+                    <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-t-lg bg-gray-200">
+                      <img
+                        src={`/images/plants/${plant.image || 'placeholder.jpg'}`}
+                        alt={plant.name}
+                        className="h-48 w-full object-cover object-center group-hover:opacity-75"
+                        onError={(e) => {
+                          e.target.src = '/images/plants/placeholder.jpg';
+                        }}
+                      />
                     </div>
                   </div>
                   
