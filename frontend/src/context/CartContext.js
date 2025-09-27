@@ -1,24 +1,84 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import api from '../axiosConfig';
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  
+  const [cartTotals, setCartTotals] = useState({
+    subtotal: "0.00",
+    discounts: [],
+    totalDiscount: "0.00",
+    total: "0.00",
+    deliveryFee: "0.00"
+  });
+  const [calculationLoading, setCalculationLoading] = useState(false);
+  const [calculationError, setCalculationError] = useState(null);
 
-  // load cart from localStorage on mount
+  const calculateTotals = useCallback(async (items, deliveryFee = 0) => {
+    if (items.length === 0) {
+      setCartTotals({
+        subtotal: "0.00",
+        discounts: [],
+        totalDiscount: "0.00",
+        total: deliveryFee.toFixed(2),
+        deliveryFee: deliveryFee.toFixed(2)
+      });
+      setCalculationError(null);
+      return;
+    }
+
+    setCalculationLoading(true);
+    setCalculationError(null);
+
+    try {
+      const payload = {
+        items: items.map(item => ({
+          plantId: item.plant._id,
+          qty: item.qty
+        })),
+        deliveryFee: deliveryFee
+      };
+
+      const response = await api.post('/cart/calculate-totals', payload);
+      setCartTotals(response.data);
+    } catch (error) {
+      console.error('Cart calculation failed:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to calculate cart totals';
+      setCalculationError(errorMessage);
+      
+      // fallback to basic calculation on error
+      const basicSubtotal = items.reduce((total, item) => 
+        total + (item.plant.price * item.qty), 0
+      );
+      setCartTotals({
+        subtotal: basicSubtotal.toFixed(2),
+        discounts: [],
+        totalDiscount: "0.00",
+        total: (basicSubtotal + deliveryFee).toFixed(2),
+        deliveryFee: deliveryFee.toFixed(2)
+      });
+    } finally {
+      setCalculationLoading(false);
+    }
+  }, []);
+
+  // load cart from localStorage
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem('nurseryCart');
       if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
+        const items = JSON.parse(savedCart);
+        setCartItems(items);
       }
     } catch (error) {
       console.error('Failed to load cart from localStorage:', error);
     }
   }, []);
 
-  // save cart to localStorage whenever it changes
+  // save cart to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('nurseryCart', JSON.stringify(cartItems));
@@ -31,28 +91,24 @@ export const CartProvider = ({ children }) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.plant._id === plant._id);
       
-      // check if adding this quantity would exceed stock
       if (existingItem) {
         const newQuantity = existingItem.qty + quantity;
         if (newQuantity > plant.stock) {
           console.warn(`Cannot add ${quantity} more ${plant.name}. Would exceed stock limit of ${plant.stock}`);
-          return prevItems; // Return unchanged cart
+          return prevItems;
         }
         
-        // update quantity if within stock limit
         return prevItems.map(item =>
           item.plant._id === plant._id
             ? { ...item, qty: newQuantity }
             : item
         );
       } else {
-        // check if initial quantity exceeds stock
         if (quantity > plant.stock) {
           console.warn(`Cannot add ${quantity} ${plant.name}. Only ${plant.stock} in stock`);
-          return prevItems; // return unchanged cart
+          return prevItems;
         }
         
-        // add new item to cart
         return [...prevItems, { plant, qty: quantity }];
       }
     });
@@ -67,10 +123,9 @@ export const CartProvider = ({ children }) => {
     setCartItems(prevItems =>
       prevItems.map(item => {
         if (item.plant._id === plantId) {
-          // check stock limit when updating quantity
           if (newQuantity > item.plant.stock) {
             console.warn(`Cannot set quantity to ${newQuantity}. Only ${item.plant.stock} ${item.plant.name} in stock`);
-            return item; // return unchanged item
+            return item;
           }
           return { ...item, qty: newQuantity };
         }
@@ -87,6 +142,13 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCartItems([]);
+    setCartTotals({
+      subtotal: "0.00",
+      discounts: [],
+      totalDiscount: "0.00",
+      total: "0.00",
+      deliveryFee: "0.00"
+    });
   };
 
   const getTotalItems = () => {
@@ -94,24 +156,19 @@ export const CartProvider = ({ children }) => {
   };
 
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => 
-      total + (item.plant.price * item.qty), 0
-    );
+    return parseFloat(cartTotals.total);
   };
 
-  // get current quantity of a specific plant in cart
   const getCartQuantity = (plantId) => {
     const item = cartItems.find(item => item.plant._id === plantId);
     return item ? item.qty : 0;
   };
 
-  // check if we can add more of a specific plant
   const canAddMore = (plant, additionalQty = 1) => {
     const currentQty = getCartQuantity(plant._id);
     return (currentQty + additionalQty) <= plant.stock;
   };
 
-  // considering what's already in cart to give update on available stock
   const getAvailableStock = (plant) => {
     const inCart = getCartQuantity(plant._id);
     return Math.max(0, plant.stock - inCart);
@@ -120,10 +177,37 @@ export const CartProvider = ({ children }) => {
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
 
+  // for external components to trigger calculation with delivery fee
+  const calculateWithDelivery = useCallback((deliveryFee) => {
+    calculateTotals(cartItems, deliveryFee);
+  }, [cartItems, calculateTotals]);
+
+  // calculate when cart items change
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      const timer = setTimeout(() => {
+        calculateTotals(cartItems, 0);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      // reset totals for empty cart
+      setCartTotals({
+        subtotal: "0.00",
+        discounts: [],
+        totalDiscount: "0.00",
+        total: "0.00",
+        deliveryFee: "0.00"
+      });
+    }
+  }, [cartItems, calculateTotals]);
+
   return (
     <CartContext.Provider value={{
       cartItems,
       isCartOpen,
+      cartTotals,
+      calculationLoading,
+      calculationError,
       addToCart,
       updateQuantity,
       removeFromCart,
@@ -134,7 +218,8 @@ export const CartProvider = ({ children }) => {
       canAddMore,
       getAvailableStock,
       openCart,
-      closeCart
+      closeCart,
+      calculateWithDelivery
     }}>
       {children}
     </CartContext.Provider>

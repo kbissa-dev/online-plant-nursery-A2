@@ -1,5 +1,4 @@
 const DiscountStrategy = require('./discountStrategy');
-const PricingService = require('../services/pricingService');
 
 class BulkDiscount extends DiscountStrategy {
     constructor() {
@@ -31,7 +30,7 @@ class BulkDiscount extends DiscountStrategy {
         let totalDiscountInCents = 0;
 
         for (const item of cart.items) {
-            const itemPriceInCents = PricingService.dollarsToCents(item.plant.price);
+            const itemPriceInCents = this.dollarsToCents(item.plant.price); // Fixed: use this.dollarsToCents
             const itemSubtotalInCents = itemPriceInCents * item.qty;
             const itemDiscountInCents = Math.floor(itemSubtotalInCents * discountTier.discount / 100);
             totalDiscountInCents += itemDiscountInCents;

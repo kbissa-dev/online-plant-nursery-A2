@@ -1,5 +1,3 @@
-const PricingService = require('../services/pricingService');
-
 class DiscountStrategy {
     constructor(name, description, priority = 0, combinationRule = 'STACK') {
         if (this.constructor === DiscountStrategy) {
@@ -31,9 +29,17 @@ class DiscountStrategy {
 
     getSubtotalInCents(cart) {
         return cart.items.reduce((total, item) => {
-            const priceInCents = PricingService.dollarsToCents(item.plant.price);
+            const priceInCents = this.dollarsToCents(item.plant.price);
             return total + (priceInCents * item.qty);
         }, 0);
+    }
+
+    dollarsToCents(dollars) {
+        return Math.round(parseFloat(dollars) * 100);
+    }
+
+    centsToDollars(cents) {
+        return (cents / 100).toFixed(2);
     }
 }
 
