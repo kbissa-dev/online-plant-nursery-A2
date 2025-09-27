@@ -1,5 +1,4 @@
 const DiscountStrategy = require('./discountStrategy');
-const PricingService = require('../services/pricingService');
 
 class SeasonalDiscount extends DiscountStrategy {
     // to implement concrete seasonal discount strategies/logic such as shown in bulkDiscount.js
@@ -44,7 +43,7 @@ class SeasonalDiscount extends DiscountStrategy {
         );
 
         for (const item of outdoorItems) {
-            const itemPriceInCents = PricingService.dollarsToCents(item.plant.price);
+            const itemPriceInCents = this.dollarsToCents(item.plant.price); // Fixed: use this.dollarsToCents
             const itemSubtotal = itemPriceInCents * item.qty;
             discountInCents += Math.floor(itemSubtotal * 15 / 100);
         }

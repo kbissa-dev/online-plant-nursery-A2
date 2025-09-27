@@ -7,7 +7,14 @@ import { useCart } from "../context/CartContext";
 
 export default function OrderManager() {
   const { user } = useAuth();
-  const { cartItems, clearCart, getTotalPrice } = useCart();
+  const { 
+    cartItems, 
+    clearCart, 
+    cartTotals, 
+    calculationLoading, 
+    calculationError,
+    calculateWithDelivery 
+  } = useCart();
   const [orders, setOrders] = useState([]);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [msg, setMsg] = useState("");
@@ -16,6 +23,17 @@ export default function OrderManager() {
   const [processing, setProcessing] = useState(false);
   const [channels, setChannels] = useState({ email: true, sms: false, toast: true });
   const [processingId, setProcessingId] = useState(null);
+
+  // update cart totals when delivery fee changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (cartItems.length > 0) {
+        calculateWithDelivery(Number(deliveryFee) || 0);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [deliveryFee, cartItems.length, calculateWithDelivery]);
 
   // customer -> cancel order
   const canCancel = (order) => {
@@ -48,9 +66,6 @@ export default function OrderManager() {
     load();
   }, []);
 
-  const subtotal = getTotalPrice();
-  const total = subtotal + Number(deliveryFee || 0);
-
   const processPayment = async (amount, provider) => {
     await new Promise(resolve => setTimeout(resolve, 1500)); // simulate latency
 
@@ -71,6 +86,10 @@ export default function OrderManager() {
 
     if (cartItems.length === 0) {
       return setMsg("Your cart is empty. Add some plants first!");
+    }
+
+    if (calculationError) {
+      return setMsg("Cannot checkout: Price calculation failed. Please try again.");
     }
 
     // build items array from cart
@@ -94,7 +113,8 @@ export default function OrderManager() {
     setMsg("Processing payment...");
 
     try {
-      const paymentResult = await processPayment(total, provider);
+      const totalAmount = parseFloat(cartTotals.total);
+      const paymentResult = await processPayment(totalAmount, provider);
       setMsg("Payment successful. Creating order...");
 
       const chosenChannels = Object.entries(channels)
@@ -151,6 +171,14 @@ export default function OrderManager() {
     }
   };
 
+  const hasDiscounts = cartTotals.discounts && cartTotals.discounts.length > 0;
+  const isCheckoutDisabled = processing || calculationError || calculationLoading;
+  const needsCalculation = cartItems.length > 0 && cartTotals.subtotal === "0.00";
+
+  const triggerCalculation = () => {
+    calculateWithDelivery(Number(deliveryFee) || 0);
+  };
+
   return (
     <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
       <div className="flex justify-between items-center mb-4">
@@ -183,7 +211,7 @@ export default function OrderManager() {
         </div>
       )}
 
-      {/* Cart Review & Checkout */}
+      {/* cart review and checkout */}
       <div style={{ marginBottom: 32, padding: 16, border: "1px solid #e0e0e0", borderRadius: 8 }}>
         <h3>Cart Review & Checkout</h3>
         
@@ -194,7 +222,33 @@ export default function OrderManager() {
           </div>
         ) : (
           <>
-            {/* Cart Items Display */}
+            {/* show calculation button if needed */}
+            {needsCalculation && (
+              <div style={{ 
+                textAlign: "center", 
+                padding: 16, 
+                background: "#f0f8ff", 
+                border: "1px solid #2196f3",
+                borderRadius: 4,
+                marginBottom: 16 
+              }}>
+                <button 
+                  onClick={triggerCalculation}
+                  style={{
+                    backgroundColor: "#2196f3",
+                    color: "white",
+                    padding: "8px 16px",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer"
+                  }}
+                >
+                  Calculate Prices & Discounts
+                </button>
+              </div>
+            )}
+
+            {/* cart items display */}
             <div style={{ marginBottom: 16 }}>
               <h4>Items in your cart:</h4>
               {cartItems.map((cartItem, i) => (
@@ -218,17 +272,97 @@ export default function OrderManager() {
               ))}
             </div>
 
-            <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 8,
-                alignItems: "center",
-                padding: "12px 0"
+            {/* calculation status */}
+            {calculationLoading && (
+              <div style={{ 
+                background: "#e3f2fd", 
+                border: "1px solid #2196f3", 
+                padding: 8, 
+                marginBottom: 16,
+                borderRadius: 4 
               }}>
-                <div><strong>Subtotal: ${subtotal.toFixed(2)}</strong></div>
-                <div>
-                  Delivery Fee:{" "}
+                Calculating prices and discounts...
+              </div>
+            )}
+
+            {calculationError && (
+              <div style={{ 
+                background: "#ffebee", 
+                border: "1px solid #f44336", 
+                padding: 8, 
+                marginBottom: 16,
+                borderRadius: 4,
+                color: "#d32f2f"
+              }}>
+                Price calculation failed: {calculationError}
+              </div>
+            )}
+
+            <form onSubmit={createOrder} style={{ display: "grid", gap: 10 }}>
+              {/* pricing display */}
+              <div style={{ 
+                background: "#f9f9f9", 
+                padding: 16, 
+                borderRadius: 4, 
+                marginBottom: 16 
+              }}>
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  marginBottom: 8 
+                }}>
+                  <strong>Subtotal:</strong>
+                  <strong>${cartTotals.subtotal}</strong>
+                </div>
+
+                {/* discount breakdown */}
+                {hasDiscounts && (
+                  <div style={{ 
+                    borderTop: "1px solid #e0e0e0", 
+                    paddingTop: 8, 
+                    marginBottom: 8 
+                  }}>
+                    <div style={{ 
+                      fontWeight: "bold", 
+                      color: "#4caf50", 
+                      marginBottom: 4 
+                    }}>
+                      Discounts Applied:
+                    </div>
+                    {cartTotals.discounts.map((discount, index) => (
+                      <div key={index} style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        fontSize: "0.9em",
+                        color: "#4caf50",
+                        marginBottom: 2
+                      }}>
+                        <span>{discount.name}: {discount.description}</span>
+                        <span>-${discount.amount}</span>
+                      </div>
+                    ))}
+                    <div style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      fontWeight: "bold",
+                      color: "#4caf50",
+                      borderTop: "1px solid #e0e0e0",
+                      paddingTop: 4,
+                      marginTop: 4
+                    }}>
+                      <span>Total Discount:</span>
+                      <span>-${cartTotals.totalDiscount}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  marginBottom: 8 
+                }}>
+                  <span>Delivery Fee:</span>
                   <input
                     type="number"
                     step="0.01"
@@ -237,8 +371,17 @@ export default function OrderManager() {
                     style={{ width: "80px", marginLeft: "8px" }}
                   />
                 </div>
-                <div>
-                  <strong>Total: ${total.toFixed(2)}</strong>
+
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  fontSize: "1.2em",
+                  fontWeight: "bold",
+                  borderTop: "2px solid #4caf50",
+                  paddingTop: 8
+                }}>
+                  <span>Total:</span>
+                  <span>${cartTotals.total}</span>
                 </div>
               </div>
 
@@ -269,15 +412,18 @@ export default function OrderManager() {
                   Toast</label>
               </div>
 
-              <button type="submit" disabled={processing} style={{
-                backgroundColor: processing ? "#ccc" : "#4caf50",
+              <button type="submit" disabled={isCheckoutDisabled} style={{
+                backgroundColor: isCheckoutDisabled ? "#ccc" : "#4caf50",
                 color: "white",
                 padding: "12px 16px",
                 border: "none",
                 borderRadius: "4px",
-                cursor: processing ? "not-allowed" : "pointer"
+                cursor: isCheckoutDisabled ? "not-allowed" : "pointer"
               }}>
-                {processing ? "Processing Payment..." : `Place Order - $${total.toFixed(2)}`}
+                {processing ? "Processing Payment..." : 
+                 calculationError ? "Cannot checkout - Price error" :
+                 calculationLoading ? "Calculating..." :
+                 `Place Order - $${cartTotals.total}`}
               </button>
             </form>
           </>
