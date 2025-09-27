@@ -18,8 +18,13 @@ return (
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* logo/brand */}
-          <Link to="/" className="text-xl font-bold hover:text-green-200">
-            GREEN - Online Plant Nursery
+          <Link to="/" className="flex items-center space-x-3 text-xl font-bold hover:text-green-200">
+            <img 
+              src="/green_icon_small.png" 
+              alt="GREEN logo" 
+              className="h-12 w-auto"
+            />
+            <span>GREEN - Online Plant Nursery</span>
           </Link>
 
           {/* navigation links */}
