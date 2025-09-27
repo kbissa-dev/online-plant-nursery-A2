@@ -4,7 +4,7 @@ const path = require('path');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     //const uploadPath = path.join(__dirname, '../../frontend/public/images/plants/');
-    const uploadPath = '/home/ubuntu/www/actions-runner/_work/online-plant-nursery-A2/online-plant-nursery-A2/frontend/public/images/plants/';
+    const uploadPath = '/home/ubuntu/www/actions-runner/_work/online-plant-nursery-A2/online-plant-nursery-A2/frontend/build/images/plants/';
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
