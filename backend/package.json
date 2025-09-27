@@ -11,6 +11,7 @@
     "prod": "node server.js"
   },
   "dependencies": {
+    "all": "^0.0.0",
     "bcrypt": "^5.0.1",
     "chai": "^4.5.0",
     "chai-http": "^4.3.0",
