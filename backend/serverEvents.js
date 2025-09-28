@@ -39,7 +39,7 @@ if (require.main === module) {
     registerInventorySubscribers();
 
     const PORT = process.env.PORT || 5002; // different port than team’s server
-    app.listen(PORT, () => console.log(`🚀 Event server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`Event server running on port ${PORT}`));
   });
 }
 
