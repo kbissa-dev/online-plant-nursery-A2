@@ -10,5 +10,4 @@ router.post('/', protect, requireStaff, upload.single('image'), c.addPlant);
 router.put('/:id', protect, requireStaff, upload.single('image'), c.updatePlant);
 router.delete('/:id', protect, requireStaff, c.deletePlant);
 
-
 module.exports = router;

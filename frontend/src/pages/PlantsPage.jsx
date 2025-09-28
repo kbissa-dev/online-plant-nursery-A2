@@ -137,11 +137,11 @@ export default function PlantsPage() {
                     {/* placeholder for plant image */}                   
                     <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-t-lg bg-gray-200">
                       <img
-                        src={`/uploads/plants/${plant.image || 'placeholder.jpg'}`}
+                        src={`/images/plants/${plant.image || 'placeholder.jpg'}`}
                         alt={plant.name}
                         className="h-48 w-full object-cover object-center group-hover:opacity-75"
                         onError={(e) => {
-                          e.target.src = '/uploads/plants/placeholder.jpg';
+                          e.target.src = '/images/plants/placeholder.jpg';
                         }}
                       />
                     </div>
