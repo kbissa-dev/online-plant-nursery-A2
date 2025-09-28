@@ -1,7 +1,7 @@
 // src/api/events.js
 import axios from "axios";
 
-const API_URL = "http://localhost:5001/api/events"; // adjust to match backend
+const API_URL = "http://localhost:5001/api/events";
 
 export const getEvents = async () => {
   const res = await axios.get(API_URL);
