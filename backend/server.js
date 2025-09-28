@@ -25,6 +25,9 @@ app.use('/api/inventory', require('./routes/inventoryRoutes'));
 
 app.use('/api/cart', require('./routes/cartRoutes'));
 
+// for the plant images
+app.use('/uploads', express.static('/home/ubuntu/www/uploads'));
+
 // Basic error handling
 app.use((req, res) => res.status(404).json({ message: 'Not found' }));
 
