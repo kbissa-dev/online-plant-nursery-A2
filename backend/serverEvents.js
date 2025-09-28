@@ -11,7 +11,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health probe
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, uptime: process.uptime() });
 });
