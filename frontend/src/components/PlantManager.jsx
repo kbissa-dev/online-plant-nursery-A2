@@ -103,34 +103,114 @@ const onSubmit = async (e) => {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "24px auto", padding: 16,color: "olive" }}>
+    <div style={{ maxWidth: 900, margin: "24px auto", padding: 16, color: "olive" }}>
       <h1>Plant Manager</h1>
       {msg && <div style={{ background: "#f8f9ff", border: "1px solid #e6e8ff", padding: 10 }}>{msg}</div>}
 
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12,
-        gridTemplateColumns: "1.2fr 0.8fr 0.5fr 1fr 2fr 1fr auto",
-        alignItems: "center", margin: "8px 0 20px"}}>
-        <input name="name" placeholder="Name" value={form.name} onChange={onChange} required />
-        <input name="price" type="number" step="0.01" placeholder="Price" value={form.price} onChange={onChange} required />
-        <input name="stock" type="number" placeholder="Stock" value={form.stock} onChange={onChange} />
-        <input name="category" placeholder="Category" value={form.category} onChange={onChange} />
-        <input name="description" placeholder="Description" value={form.description} onChange={onChange} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <form onSubmit={onSubmit} style={{ marginBottom: 20 }}>
+        {/* main fields row */}
+        <div style={{ 
+          display: "grid", 
+          gap: 12,
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+          alignItems: "center", 
+          marginBottom: 16 
+        }}>
           <input 
-            type="file" 
-            accept="image/*" 
-            onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
+            name="name" 
+            placeholder="Name" 
+            value={form.name} 
+            onChange={onChange} 
+            required 
+            style={{ minWidth: 0 }}
           />
-          {editingId && (
-            <div style={{ fontSize: "0.8em", color: "#666" }}>
-              Current: <img 
-                src={`/images/plants/${plants.find(p => p._id === editingId)?.image || 'placeholder.jpg'}`}
-                alt="Current"
-                style={{ height: 30, width: 30, objectFit: "cover", verticalAlign: "middle", marginLeft: 4 }}
-              />
+
+          <input 
+            name="price" 
+            type="number" 
+            step="0.01" 
+            placeholder="Price" 
+            value={form.price} 
+            onChange={onChange} 
+            required 
+            style={{ minWidth: 0 }}
+          />
+
+          <input 
+            name="stock" 
+            type="number" 
+            placeholder="Stock" 
+            value={form.stock} 
+            onChange={onChange} 
+            style={{ minWidth: 0 }}
+          />
+
+          <input 
+            name="category" 
+            placeholder="Category" 
+            value={form.category} 
+            onChange={onChange} 
+            style={{ minWidth: 0 }}
+          />
+          
+          <input 
+            name="description" 
+            placeholder="Description" 
+            value={form.description} 
+            onChange={onChange} 
+            style={{ minWidth: 0, gridColumn: "span 2" }}
+          />
+        </div>
+
+        {/* image upload */}
+        <div style={{ 
+          display: "flex", 
+          flexDirection: "column", 
+          gap: 8, 
+          marginBottom: 16,
+          padding: 12,
+          background: "#f9f9f9",
+          borderRadius: 4,
+          border: "1px solid #e0e0e0"
+        }}>
+          <label style={{ fontWeight: "bold", fontSize: "14px" }}>Plant Image:</label>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
+              style={{ flex: "1", minWidth: "200px" }}
+            />
+            
+            {editingId && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "12px", color: "#666" }}>Current:</span>
+                <img 
+                  src={`/images/plants/${plants.find(p => p._id === editingId)?.image || 'placeholder.jpg'}`}
+                  alt="Current plant"
+                  style={{ 
+                    height: 40, 
+                    width: 40, 
+                    objectFit: "cover", 
+                    borderRadius: 4,
+                    border: "1px solid #ddd"
+                  }}
+                  onError={(e) => {
+                    e.target.src = '/images/plants/placeholder.jpg';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          
+          {form.image && (
+            <div style={{ fontSize: "12px", color: "#666" }}>
+              Selected: {form.image.name}
             </div>
           )}
         </div>
+
         <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded">
           {editingId ? "Update" : "Add"} Plant
         </button>
