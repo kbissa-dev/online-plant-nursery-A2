@@ -3,10 +3,10 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
-import PlantManager from './components/PlantManager'; // Admin-Plant
-import OrderManager from './components/OrderManager'; // Order
-import PlantsPage from './pages/PlantsPage';          // Customer
-import CommunityEvents from './components/CommunityEvents'; // new import
+import PlantManager from './components/PlantManager'; 
+import OrderManager from './components/OrderManager'; 
+import PlantsPage from './pages/PlantsPage';         
+import CommunityEvents from './components/CommunityEvents'; 
 
 function App() {
   return (
