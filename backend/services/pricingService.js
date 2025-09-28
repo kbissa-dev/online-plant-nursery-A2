@@ -18,8 +18,10 @@ class PricingService {
         try {
             const subtotalInCents = cart.items.reduce((total, item) => total + (this.dollarsToCents(item.plant.price) * item.qty), 0);
             
-            const strategies = DiscountStrategyFactory.create(user, cart);
+            const FactoryToUse = global.DiscountStrategyFactory || DiscountStrategyFactory;
+            const strategies = FactoryToUse.create(user, cart);
             const discountResults = [];
+            
             let totalDiscountInCents = 0;
 
             for (const strategy of strategies) {
