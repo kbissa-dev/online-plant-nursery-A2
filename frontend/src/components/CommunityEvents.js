@@ -38,7 +38,7 @@ const CommunityEvents = () => {
         {events.map(ev => (
           <li key={ev.id}>
             <strong>{ev.title}</strong> ({ev.date}) at {ev.location}
-            {ev.isFeatured && <span style={{ color: "red" }}> ★ Featured</span>}
+            {ev.isFeatured && <span style={{ color: "red" }}> Featured</span>}
             <button onClick={() => handleRSVP(ev.id)}>RSVP</button>
           </li>
         ))}
