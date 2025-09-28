@@ -124,7 +124,7 @@ const onSubmit = async (e) => {
           {editingId && (
             <div style={{ fontSize: "0.8em", color: "#666" }}>
               Current: <img 
-                src={`/uploads/plants/${plants.find(p => p._id === editingId)?.image || 'placeholder.jpg'}`}
+                src={`/images/plants/${plants.find(p => p._id === editingId)?.image || 'placeholder.jpg'}`}
                 alt="Current"
                 style={{ height: 30, width: 30, objectFit: "cover", verticalAlign: "middle", marginLeft: 4 }}
               />
