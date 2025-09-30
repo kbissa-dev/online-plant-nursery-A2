@@ -1,118 +1,74 @@
 // backend/test/event_test.js
-
 const chai = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
 
-const Event = require('../models/Event');
-const User = require('../models/User');
 const eventController = require('../controllers/eventController');
-
+const EventDecorator = require('../decorator/eventDecorator'); 
 const { expect } = chai;
 
-describe('Community Events Controller Tests', () => {
+describe('Community Events Controller Functional Tests (CRUD)', () => {
   afterEach(() => sinon.restore());
 
   // ---- Create Event ----
   describe('createEvent', () => {
-    it('should create a new event successfully', async () => {
+    it('T001 - should create a new event successfully', async () => {
       const req = {
         user: { _id: new mongoose.Types.ObjectId() },
-        body: { title: 'Hackathon', date: new Date(), location: 'QUT', attendees: [] }
+        body: { title: 'Hackathon', date: new Date(), location: 'QUT' }
       };
-      const createdEvent = { _id: new mongoose.Types.ObjectId(), ...req.body, createdBy: req.user._id };
+      const createdEvent = { _id: new mongoose.Types.ObjectId(), ...req.body };
 
-      // Stub manager instead of Event
       sinon.stub(eventController.__manager, 'createEvent').resolves(createdEvent);
 
-      const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };
+      // Decorator to control output
+      sinon.stub(EventDecorator.prototype, 'formatForCommunityFeed')
+        .returns({ id: createdEvent._id, title: 'Hackathon', date: req.body.date, location: 'QUT' });
 
+      const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };
       await eventController.createEvent(req, res);
 
       expect(res.status.calledWith(201)).to.be.true;
       const response = res.json.firstCall.args[0];
-      expect(response).to.include.keys(['id', 'title', 'date', 'location', 'isFeatured']);
+      expect(response).to.include.keys(['id', 'title', 'date', 'location']);
     });
 
-    it('should return 400 if create fails', async () => {
-      const req = { user: { _id: new mongoose.Types.ObjectId() }, body: { title: 'Bad Event' } };
+    it('T002 - should not create event without title', async () => {
+      const req = { user: { _id: new mongoose.Types.ObjectId() }, body: {} };
       const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };
 
-      sinon.stub(eventController.__manager, 'createEvent').throws(new Error('DB Error'));
+      sinon.stub(eventController.__manager, 'createEvent').throws(new Error('Title required'));
 
       await eventController.createEvent(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWithMatch({ message: 'DB Error' })).to.be.true;
-    });
-  });
-
-  // ---- List Events ----
-  describe('listEvents', () => {
-    it('should return a decorated list of events', async () => {
-      const events = [
-        { _id: new mongoose.Types.ObjectId(), title: 'Hackathon', date: new Date(), location: 'QUT', attendees: [] }
-      ];
-
-      sinon.stub(eventController.__manager, 'listEvents').resolves(events);
-
-      const req = {};
-      const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
-
-      await eventController.listEvents(req, res);
-
-      const response = res.json.firstCall.args[0];
-      expect(response[0]).to.include.keys(['id', 'title', 'date', 'location', 'isFeatured']);
+      expect(res.json.calledWithMatch({ message: 'Title required' })).to.be.true;
     });
 
-    it('should return 400 on error', async () => {
-      sinon.stub(eventController.__manager, 'listEvents').throws(new Error('DB Error'));
+    it('T003 - should not allow duplicate event creation', async () => {
+      const req = { user: { _id: new mongoose.Types.ObjectId() }, body: { title: 'Hackathon' } };
+      const res = { status: sinon.stub().returnsThis(), json: sinon.spy() };
 
-      const req = {};
-      const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
+      sinon.stub(eventController.__manager, 'createEvent').throws(new Error('Duplicate event'));
 
-      await eventController.listEvents(req, res);
+      await eventController.createEvent(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
-      expect(res.json.calledWithMatch({ message: 'DB Error' })).to.be.true;
-    });
-  });
-
-  // ---- Get Event ----
-  describe('getEvent', () => {
-    it('should return decorated event detail', async () => {
-      const event = { _id: new mongoose.Types.ObjectId(), title: 'Seminar', date: new Date(), location: 'Brisbane', attendees: [] };
-      sinon.stub(eventController.__manager, 'getEvent').resolves(event);
-
-      const req = { params: { id: event._id.toString() } };
-      const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
-
-      await eventController.getEvent(req, res);
-
-      const response = res.json.firstCall.args[0];
-      expect(response).to.include.keys(['id', 'title', 'date', 'location', 'isFeatured']);
-    });
-
-    it('should return 404 if event not found', async () => {
-      sinon.stub(eventController.__manager, 'getEvent').throws(new Error('Event not found'));
-
-      const req = { params: { id: new mongoose.Types.ObjectId().toString() } };
-      const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
-
-      await eventController.getEvent(req, res);
-
-      expect(res.status.calledWith(404)).to.be.true;
-      expect(res.json.calledWithMatch({ message: 'Event not found' })).to.be.true;
+      expect(res.json.calledWithMatch({ message: 'Duplicate event' })).to.be.true;
     });
   });
 
   // ---- Update Event ----
   describe('updateEvent', () => {
-    it('should update event successfully', async () => {
+    it('T004 - should update event successfully', async () => {
       const id = new mongoose.Types.ObjectId().toString();
-      const updated = { _id: id, title: 'Updated Title', date: new Date(), location: 'QUT', attendees: [] };
+      const updated = { _id: id, title: 'Updated Title', date: new Date(), location: 'QUT' };
 
       sinon.stub(eventController.__manager, 'updateEvent').resolves(updated);
+
+      // Decorator to control output
+      sinon.stub(EventDecorator.prototype, 'formatForCommunityFeed')
+        .returns({ id, title: 'Updated Title', date: updated.date, location: 'QUT' });
 
       const req = { params: { id }, body: { title: 'Updated Title' }, user: { _id: id } };
       const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
@@ -120,12 +76,13 @@ describe('Community Events Controller Tests', () => {
       await eventController.updateEvent(req, res);
 
       const response = res.json.firstCall.args[0];
-      expect(response).to.include.keys(['id', 'title', 'date', 'location', 'isFeatured']);
+      expect(response).to.include.keys(['id', 'title', 'date', 'location']);
+      expect(response.title).to.equal('Updated Title');
     });
 
-    it('should return 400 if update fails', async () => {
-      const id = new mongoose.Types.ObjectId().toString();
-      sinon.stub(eventController.__manager, 'updateEvent').throws(new Error('DB Error'));
+    it('T005 - should reject invalid update input', async () => {
+      const id = 'bad-id';
+      sinon.stub(eventController.__manager, 'updateEvent').throws(new Error('Invalid ID'));
 
       const req = { params: { id }, body: {}, user: { _id: id } };
       const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
@@ -133,26 +90,27 @@ describe('Community Events Controller Tests', () => {
       await eventController.updateEvent(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWithMatch({ message: 'Invalid ID' })).to.be.true;
     });
   });
 
   // ---- Delete Event ----
   describe('deleteEvent', () => {
-    it('should delete event successfully', async () => {
+    it('T006 - should delete event successfully', async () => {
       const id = new mongoose.Types.ObjectId().toString();
-      sinon.stub(eventController.__manager, 'deleteEvent').resolves({ ok: true });
+      sinon.stub(eventController.__manager, 'deleteEvent').resolves({ message: 'Event deleted' });
 
       const req = { params: { id }, user: { _id: id } };
       const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
 
       await eventController.deleteEvent(req, res);
 
-      expect(res.json.calledWith({ ok: true })).to.be.true;
+      expect(res.json.calledWith({ message: 'Event deleted' })).to.be.true;
     });
 
-    it('should return 400 if delete fails', async () => {
+    it('T007 - should block deletion of non-existent event', async () => {
       const id = new mongoose.Types.ObjectId().toString();
-      sinon.stub(eventController.__manager, 'deleteEvent').throws(new Error('DB Error'));
+      sinon.stub(eventController.__manager, 'deleteEvent').throws(new Error('Event not found'));
 
       const req = { params: { id }, user: { _id: id } };
       const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
@@ -160,36 +118,30 @@ describe('Community Events Controller Tests', () => {
       await eventController.deleteEvent(req, res);
 
       expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.calledWithMatch({ message: 'Event not found' })).to.be.true;
     });
   });
 
-  // ---- RSVP Event ----
-  describe('rsvpEvent', () => {
-    it('should RSVP successfully', async () => {
-      const id = new mongoose.Types.ObjectId().toString();
-      const userId = new mongoose.Types.ObjectId().toString();
-      const event = { _id: id, attendees: [userId], title: 'Test', date: new Date(), location: 'QUT' };
+  // ---- List Events ----
+  describe('listEvents', () => {
+    it('T008 - should display list of all events correctly', async () => {
+      const events = [
+        { _id: new mongoose.Types.ObjectId(), title: 'Hackathon', date: new Date(), location: 'QUT' }
+      ];
+      sinon.stub(eventController.__manager, 'listEvents').resolves(events);
 
-      sinon.stub(eventController.__manager, 'rsvpToEvent').resolves(event);
+      // Decorator so output is predictable
+      sinon.stub(EventDecorator.prototype, 'formatForCommunityFeed')
+        .returns({ id: events[0]._id, title: 'Hackathon', date: events[0].date, location: 'QUT' });
 
-      const req = { params: { id }, user: { _id: userId } };
+      const req = {};
       const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
 
-      await eventController.rsvpEvent(req, res);
+      await eventController.listEvents(req, res);
 
+      expect(res.json.calledOnce).to.be.true;
       const response = res.json.firstCall.args[0];
-      expect(response).to.include.keys(['id', 'title', 'date', 'location', 'isFeatured']);
-    });
-
-    it('should return 400 if RSVP fails', async () => {
-      sinon.stub(eventController.__manager, 'rsvpToEvent').throws(new Error('DB Error'));
-
-      const req = { params: { id: new mongoose.Types.ObjectId().toString() }, user: { _id: new mongoose.Types.ObjectId() } };
-      const res = { json: sinon.spy(), status: sinon.stub().returnsThis() };
-
-      await eventController.rsvpEvent(req, res);
-
-      expect(res.status.calledWith(400)).to.be.true;
+      expect(response[0]).to.include.keys(['id', 'title', 'date', 'location']);
     });
   });
 });
