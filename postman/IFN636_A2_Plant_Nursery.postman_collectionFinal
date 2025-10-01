@@ -1,0 +1,723 @@
+{
+	"info": {
+		"_postman_id": "f85045d1-01b7-41a8-ab52-3b01d89ebb92",
+		"name": "IFN636_A2_Plant_Nursery",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "48307886",
+		"_collection_link": "https://n12166758-8676633.postman.co/workspace/kbissa's-Workspace~164b8b9c-7504-4118-885f-327f783254db/collection/48307886-f85045d1-01b7-41a8-ab52-3b01d89ebb92?action=share&source=collection_link&creator=48307886"
+	},
+	"item": [
+		{
+			"name": "Login & Register",
+			"item": [
+				{
+					"name": "Admin_login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r",
+									"const json = pm.response.json();\r",
+									"pm.test(\"Token present\", () => pm.expect(json.token).to.be.a(\"string\"));\r",
+									"\r",
+									"// save tokens for admin-protected calls\r",
+									"pm.environment.set(\"jwt_admin\", json.token);\r",
+									"\r",
+									"// optional: also set a generic token\r",
+									"pm.environment.set(\"jwt_token\", json.token);\r",
+									"\r",
+									"console.log(\"Admin token saved:\", json.token.substring(0,20) + \"...\");\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"{{adminEmail}}\",\r\n  \"password\": \"{{adminPassword}}\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"timestamp\", Date.now());\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"201 Created\", () => pm.response.to.have.status(201));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"name\": \"Test User\",\r\n  \"email\": \"test{{timestamp}}@example.com\",\r\n  \"password\": \"Passw0rd!\" }\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customer_login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"email\": \"test@example.com\",\r\n \"password\": \"Passw0rd!\" }\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Plants CRUD",
+			"item": [
+				{
+					"name": "/plants",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const list = pm.response.json();\r",
+									"if (Array.isArray(list) && list.length) pm.environment.set(\"plant_id\", list[0]._id);\r",
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add_plant",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit_plant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"price\": 11.0, \"stock\": 15 }\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/plants/{{plant_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plants",
+								"{{plant_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_plant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/plants/{{plant_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plants",
+								"{{plant_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit_plant_customer",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_customer}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"price\": 11.0, \"stock\": 15 }\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/plants/{{plant_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plants",
+								"{{plant_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders CRUD + low stock",
+			"item": [
+				{
+					"name": "list_plants",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r",
+									"const list = pm.response.json();\r",
+									"const eligible = list.filter(p => Number(p.stock) >= 1);\r",
+									"pm.test(\"Found a plant\", () => pm.expect(eligible.length).to.be.above(0));\r",
+									"eligible.sort((a,b) => b.stock - a.stock);\r",
+									"const p = eligible[0];\r",
+									"pm.environment.set(\"plant_id\", p._id);\r",
+									"pm.environment.set(\"plant_name\", p.name);\r",
+									"pm.environment.set(\"plant_price\", p.price);\r",
+									"pm.environment.set(\"qty\", 1);\r",
+									"pm.environment.set(\"timestamp\", Date.now());\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_customer}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/plants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200/201\", () => pm.expect([200,201]).to.include(pm.response.code));\r",
+									"const json = pm.response.json();\r",
+									"pm.test(\"Order number present\", () => pm.expect(json.orderNumber || json._id).to.exist);\r",
+									"pm.environment.set(\"order_id\", json._id);\r",
+									"pm.environment.set(\"order_number\", (json.orderNumber || json._id || \"\"));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_customer}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"items\": [{\r\n    \"plant\": \"{{plant_id}}\",\r\n    \"name\": \"{{plant_name}}\",\r\n    \"price\": {{plant_price}},\r\n    \"qty\": {{qty}}\r\n  }],\r\n  \"deliveryFee\": 0,\r\n  \"provider\": \"stripe\",\r\n  \"receiptId\": \"STRIPE_{{timestamp}}\",\r\n  \"channels\": [\"email\", \"toast\"]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inventory/apply-order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"apply-order"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_orders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Visualization Script",
+									"const template = `",
+									"<table border=\"1\" style=\"border-collapse: collapse; width: 100%;\">",
+									"  <thead>",
+									"    <tr>",
+									"      <th>Order ID</th>",
+									"      <th>Order Number</th>",
+									"      <th>Status</th>",
+									"      <th>Provider</th>",
+									"      <th>Subtotal</th>",
+									"      <th>Delivery Fee</th>",
+									"      <th>Total</th>",
+									"      <th>Created By</th>",
+									"      <th>Created At</th>",
+									"      <th>Updated At</th>",
+									"    </tr>",
+									"  </thead>",
+									"  <tbody>",
+									"    {{#each response}}",
+									"    <tr>",
+									"      <td>{{_id}}</td>",
+									"      <td>{{orderNumber}}</td>",
+									"      <td>{{status}}</td>",
+									"      <td>{{provider}}</td>",
+									"      <td>{{subtotal}}</td>",
+									"      <td>{{deliveryFee}}</td>",
+									"      <td>{{total}}</td>",
+									"      <td>{{createdBy.name}}</td>",
+									"      <td>{{createdAt}}</td>",
+									"      <td>{{updatedAt}}</td>",
+									"    </tr>",
+									"    {{/each}}",
+									"  </tbody>",
+									"</table>",
+									"`;",
+									"",
+									"function createPayload() {",
+									"  const data = pm.response.json();",
+									"  return { response: data };",
+									"}",
+									"",
+									"pm.visualizer.set(template, createPayload());"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_customer}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "cancel_order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Cancel status\", () => pm.expect([200,409,403,404]).to.include(pm.response.code));\r",
+									"if (pm.response.code === 200) {\r",
+									"  const js = pm.response.json();\r",
+									"  pm.test(\"Cancelled\", () => pm.expect(js.success).to.be.true);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_customer}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{order_id}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{order_id}}",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "low_stock",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", ()=> pm.response.to.have.status(200));\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_admin}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/low-stock",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"low-stock"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "insufficient_stock",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Statusshould be 400\", () => {\r",
+									"    pm.expect(pm.response.code).to.eql(400);\r",
+									"});\r",
+									"pm.test(\"Error message present\", () => {\r",
+									"    const json = pm.response.json();\r",
+									"    pm.expect(json.message).to.eql(\"Insufficient stock or plant not foind\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_customer}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"items\":[\r\n        {\r\n            \"plant\":\"{{plant_id}}\",\r\n            \"name\":\"{{plant_name}}\",\r\n            \"price\":{{plant_price}},\r\n            \"qty\":5\r\n        }\r\n    ],\r\n    \"deliveryFee\":0,\r\n    \"provider\":\"stripe\",\r\n    \"receiptId\":\"STRIPE_{{timestamp}}\",\r\n    \"channels\":[\"email\", \"toast\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inventory/apply-order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"apply-order"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
