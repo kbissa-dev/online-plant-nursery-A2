@@ -85,45 +85,31 @@ describe('PricingService', () => {
       delete global.DiscountStrategyFactory;
     });
 
-    it('should calculate totals with bulk discount', async () => {
-      const cart = {
-        items: [
-          { plant: { price: 10 }, qty: 5 },
-          { plant: { price: 20 }, qty: 3 }
-        ]
-      };
+      it('should calculate totals with bulk discount', async () => {
+    const cart = {
+      items: [
+        { plant: { price: 10 }, qty: 5 },
+        { plant: { price: 20 }, qty: 3 }
+      ]
+    };
 
-      const user = { loyaltyTier: 'silver' };
-
-      const mockStrategy = {
-        name: 'Bulk Discount',
-        calculateInCents: sinon.stub().resolves({
-          amountInCents: 500, // $5 discount
-          description: '5% off 5+ items'
-        })
-      };
-
-      const DiscountStrategyFactory = {
-        create: sinon.stub().returns([mockStrategy])
-      };
-
-      global.DiscountStrategyFactory = DiscountStrategyFactory;
+      const user = { loyaltyTier: 'green' };
 
       const result = await PricingService.calculateTotals(cart, user);
 
-      expect(result.subtotalInCents).to.equal(11000); // 10*5 + 20*3 = $110
-      expect(result.totalDiscountInCents).to.equal(500); // $5 discount
-      expect(result.totalInCents).to.equal(10500); // 110 - 5 = $105
+      expect(result.subtotalInCents).to.equal(11000); 
+      expect(result.totalDiscountInCents).to.equal(550); 
+      expect(result.totalInCents).to.equal(10450); 
       expect(result.discounts).to.have.length(1);
       expect(result.discounts[0]).to.include({
         name: 'Bulk Discount',
-        amountInCents: 500,
-        amount: '5.00',
-        description: '5% off 5+ items'
+        amountInCents: 550,
+        amount: '5.50',
+        description: '5% off 5+ items (8 items)'
       });
       expect(result.subtotal).to.equal('110.00');
-      expect(result.totalDiscount).to.equal('5.00');
-      expect(result.total).to.equal('105.00');
+      expect(result.totalDiscount).to.equal('5.50');
+      expect(result.total).to.equal('104.50');
 
       delete global.DiscountStrategyFactory;
     });
@@ -148,8 +134,8 @@ describe('PricingService', () => {
       const loyaltyStrategy = {
         name: 'Loyalty Discount',
         calculateInCents: sinon.stub().resolves({
-          amountInCents: 1500, // $15 discount
-          description: 'Gold member 5% off'
+          amountInCents: 3000, // $30 discount
+          description: 'Gold member 10% off'
         })
       };
 
@@ -162,10 +148,10 @@ describe('PricingService', () => {
       const result = await PricingService.calculateTotals(cart, user);
 
       expect(result.subtotalInCents).to.equal(30000); // 30*10 = $300
-      expect(result.totalDiscountInCents).to.equal(4500); // 30 + 15 = $45 discount
-      expect(result.totalInCents).to.equal(25500); // 300 - 45 = $255
+      expect(result.totalDiscountInCents).to.equal(6000); // 30 + 30 = $60 discount
+      expect(result.totalInCents).to.equal(24000); // 300 - 60 = $240
       expect(result.discounts).to.have.length(2);
-      expect(result.total).to.equal('255.00');
+      expect(result.total).to.equal('240.00');
 
       delete global.DiscountStrategyFactory;
     });

@@ -273,18 +273,6 @@ export default function OrderManager() {
             </div>
 
             {/* calculation status */}
-            {calculationLoading && (
-              <div style={{ 
-                background: "#e3f2fd", 
-                border: "1px solid #2196f3", 
-                padding: 8, 
-                marginBottom: 16,
-                borderRadius: 4 
-              }}>
-                Calculating prices and discounts...
-              </div>
-            )}
-
             {calculationError && (
               <div style={{ 
                 background: "#ffebee", 
